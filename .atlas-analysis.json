@@ -1,0 +1,133 @@
+{
+  "projectType": "general",
+  "projectName": "Helium",
+  "projectDescription": "A privacy-focused Chromium-based web browser built on ungoogled-chromium with custom UI, features, and unbiased ad-blocking.",
+  "theme": "palm",
+  "primaryColor": "#5B9BD5",
+  "lightColor": "#7DB3E8",
+  "darkColor": "#4A7DAD",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "downloads",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "features/overview",
+              "features/privacy",
+              "features/ui-customization",
+              "features/native-bangs",
+              "features/ublock-origin",
+              "features/vertical-tabs"
+            ]
+          },
+          {
+            "group": "Usage Guide",
+            "pages": [
+              "usage/settings",
+              "usage/keyboard-shortcuts",
+              "usage/flags",
+              "usage/updates"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Development",
+        "groups": [
+          {
+            "group": "Building",
+            "pages": [
+              "development/overview",
+              "development/requirements",
+              "development/building",
+              "development/patches"
+            ]
+          },
+          {
+            "group": "Contributing",
+            "pages": [
+              "development/contributing",
+              "development/patch-development",
+              "development/testing",
+              "development/platform-packaging"
+            ]
+          },
+          {
+            "group": "Utilities",
+            "pages": [
+              "development/devutils",
+              "development/utils",
+              "development/validation"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "Configuration",
+            "pages": [
+              "reference/flags-gn",
+              "reference/deps-ini",
+              "reference/downloads-ini",
+              "reference/patches-series"
+            ]
+          },
+          {
+            "group": "Architecture",
+            "pages": [
+              "reference/architecture",
+              "reference/chromium-base",
+              "reference/helium-services",
+              "reference/onboarding"
+            ]
+          },
+          {
+            "group": "Resources",
+            "pages": [
+              "reference/related-projects",
+              "reference/platform-repos",
+              "reference/credits",
+              "reference/license"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Privacy-first Chromium fork based on ungoogled-chromium",
+    "Built-in uBlock Origin for unbiased ad-blocking",
+    "Native DuckDuckGo-style bangs for quick searches",
+    "Clean, customized UI with vertical tabs support",
+    "No Google services, telemetry, or tracking",
+    "Extensive patch system for UI and behavior customization",
+    "Cross-platform support (macOS, Linux, Windows)",
+    "Automatic updates and modern browser features"
+  ],
+  "publicApiSurface": [
+    "utils/clone.py - Clone Chromium source with dependencies",
+    "utils/patches.py - Apply patch series to source tree",
+    "utils/downloads.py - Download and extract dependencies",
+    "utils/domain_substitution.py - Replace Google domains",
+    "utils/prune_binaries.py - Remove unnecessary binaries",
+    "utils/helium_version.py - Generate Helium version numbers",
+    "devutils/validate_patches.py - Validate patch integrity",
+    "devutils/update_lists.py - Update domain substitution lists",
+    "devutils/check_patch_files.py - Check patch file correctness",
+    "flags.gn - Build configuration flags",
+    "deps.ini - External dependencies configuration",
+    "patches/series - Ordered list of patches to apply"
+  ]
+}
