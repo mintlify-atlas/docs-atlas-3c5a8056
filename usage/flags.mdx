@@ -1,0 +1,368 @@
+---
+title: Chrome Flags
+description: Advanced experimental features and Helium-specific flags for customization and testing
+---
+
+Chrome flags are experimental features that allow you to customize browser behavior beyond standard settings. Helium includes all Chromium flags plus several Helium-specific flags for additional privacy and customization.
+
+<Warning>
+**Experimental Features**: Flags are experimental and may cause instability, data loss, or security issues. Use at your own risk and only enable flags you understand.
+</Warning>
+
+## Accessing Flags
+
+Navigate to the flags page:
+
+```
+chrome://flags
+```
+
+Or search in the address bar: **"chrome flags"**
+
+<Note>
+Helium's flags page features improved UI with better search, cleaner styling, and more obvious focus indicators compared to Chromium.
+</Note>
+
+## Helium-Specific Flags
+
+These flags are unique to Helium and control Helium-specific features:
+
+### Update Channel
+
+<ParamField path="helium-update-channel" type="choice" default="Automatic">
+  Selects which update channel to use for update checking.
+  
+  **Options:**
+  - **Automatic** (Default): Uses stable channel
+  - **Stable**: Stable release channel
+  - **Beta**: Beta release channel for testing new features
+  
+  **Location**: `chrome://flags/#helium-update-channel`
+</ParamField>
+
+<Info>
+Changing the update channel requires a browser restart. The selected channel determines which updates you receive. See [Updates](/usage/updates) for more information about channels.
+</Info>
+
+### Energy Saver Frame Rate
+
+<ParamField path="energy-saver-fps-limit" type="choice" default="Automatic">
+  Configures the frame rate the browser is throttled to when Energy Saver is enabled.
+  
+  **Options:**
+  - **Automatic** (Default): 30 FPS
+  - **30**: 30 FPS - Best battery life
+  - **60**: 60 FPS - Balanced
+  - **120**: 120 FPS - Smooth animations, less battery savings
+  - **Disabled**: No frame rate limiting
+  
+  **Location**: `chrome://flags/#energy-saver-fps-limit`
+</ParamField>
+
+<Accordion title="How Energy Saver Frame Rate Works">
+  When Energy Saver mode is active, Helium throttles all frame rendering to the specified rate. This reduces CPU and GPU usage, extending battery life.
+  
+  - **30 FPS**: Significant power savings, acceptable for most web browsing
+  - **60 FPS**: Standard refresh rate, good balance
+  - **120 FPS**: For high-refresh displays, minimal power savings
+  - **Disabled**: Disables frame throttling entirely (not recommended)
+  
+  This flag works in conjunction with the Energy Saver setting in Settings → Performance.
+</Accordion>
+
+### Disable ECH
+
+<ParamField path="disable-ech" type="boolean" default="false">
+  Disables TLS Encrypted Client Hello (ECH).
+  
+  **When to use**: Only enable this flag if you live in an area with heavy internet censorship and ECH prevents websites from loading.
+  
+  **Security impact**: Disabling ECH reduces your privacy by making your TLS connections more observable to network intermediaries.
+  
+  **Location**: `chrome://flags/#disable-ech`
+</ParamField>
+
+<Warning>
+**Not Recommended**: ECH is an important privacy protection that encrypts the initial TLS handshake. Only disable this if websites fail to load due to censorship infrastructure blocking ECH.
+</Warning>
+
+### Middle Click Autoscroll
+
+<ParamField path="middle-click-autoscroll" type="boolean" default="Windows: Enabled, Others: Disabled">
+  Enables autoscroll when you middle-click (scroll wheel click) on a page.
+  
+  **Behavior**: Middle-clicking creates an autoscroll anchor. Moving the mouse scrolls the page.
+  
+  **Default state**:
+  - **Windows**: Enabled (matches Windows system behavior)
+  - **macOS/Linux**: Disabled
+  
+  **Location**: `chrome://flags/#middle-click-autoscroll`
+</ParamField>
+
+<Tabs>
+  <Tab title="How to Use Autoscroll">
+    1. Enable the flag and restart the browser
+    2. Middle-click (press scroll wheel) on any webpage
+    3. An autoscroll anchor appears
+    4. Move your mouse up/down to scroll
+    5. Click anywhere to stop autoscrolling
+  </Tab>
+  
+  <Tab title="Conflicts">
+    Enabling autoscroll changes middle-click behavior:
+    - Middle-clicking links no longer opens them in a new tab while autoscroll mode is active
+    - You can still middle-click links before entering autoscroll mode
+  </Tab>
+</Tabs>
+
+## Notable Chromium Flags
+
+Helium includes all standard Chromium flags. Here are some notable ones:
+
+### Performance and Privacy
+
+<AccordionGroup>
+  <Accordion title="Parallel Downloading">
+    `chrome://flags/#enable-parallel-downloading`
+    
+    Enables parallel download connections to speed up file downloads. Can significantly improve download speeds on fast connections.
+    
+    **Default**: Disabled
+  </Accordion>
+  
+  <Accordion title="Smooth Scrolling">
+    `chrome://flags/#smooth-scrolling`
+    
+    Enables smooth scrolling animations. When enabled, scrolling feels more fluid and animated.
+    
+    **Default**: Platform-dependent
+  </Accordion>
+  
+  <Accordion title="Tab Groups Save">
+    `chrome://flags/#tab-groups-save`
+    
+    Allows saving tab groups for later restoration. Useful for organizing workflows.
+    
+    **Default**: Varies by version
+  </Accordion>
+  
+  <Accordion title="Reader Mode">
+    `chrome://flags/#enable-reader-mode`
+    
+    Enables a distraction-free reading mode for articles. Appears in the address bar when available.
+    
+    **Default**: Disabled
+  </Accordion>
+</AccordionGroup>
+
+### Experimental Features
+
+<AccordionGroup>
+  <Accordion title="Tab Scrolling">
+    `chrome://flags/#scrollable-tabstrip`
+    
+    Changes tab overflow behavior to use scrolling instead of shrinking tabs.
+    
+    **Default**: Disabled
+  </Accordion>
+  
+  <Accordion title="Force Dark Mode for Web Contents">
+    `chrome://flags/#enable-force-dark`
+    
+    Automatically inverts bright web pages to dark mode. Experimental and may break some sites.
+    
+    **Default**: Disabled
+  </Accordion>
+  
+  <Accordion title="Heavy Ad Intervention">
+    `chrome://flags/#enable-heavy-ad-intervention`
+    
+    Blocks ads that use excessive resources (CPU, network, etc.).
+    
+    **Default**: Enabled on some platforms
+  </Accordion>
+</AccordionGroup>
+
+## Flags UI Improvements
+
+Helium enhances the `chrome://flags` interface:
+
+### Visual Improvements
+
+- **Better focus indicators**: Clearer outlines when navigating with keyboard
+- **Improved search box**: Larger, more prominent search with better styling (8px border radius)
+- **Refined dropdown menus**: Improved select controls with 6px border radius
+- **Better spacing**: Increased max-width and better padding for readability
+
+### User Experience
+
+- **Cleaner layout**: Streamlined design matching Helium's aesthetic
+- **Keyboard navigation**: Improved accessibility for keyboard users
+- **Responsive design**: Better behavior on different screen sizes
+
+<Note>
+The flags page is implemented as a WebUI component and inherits Helium's design system, making it feel more integrated with the rest of the browser.
+</Note>
+
+## Removed and Excluded Flags
+
+Helium removes or excludes flags that conflict with privacy goals:
+
+- Ad-related flags (Autofill offers in keyboard accessory, etc.)
+- Tracking and analytics flags
+- Google-specific integration flags
+- Features that phone home unnecessarily
+
+<Info>
+Many irrelevant flags are hidden via the `exclude-irrelevant-flags` patch. This keeps the flags page focused on useful features.
+</Info>
+
+## Managing Flags
+
+### Searching Flags
+
+Use the search box at the top of `chrome://flags` to find specific flags:
+
+```
+Type keyword (e.g., "download", "scroll", "dark")
+```
+
+### Enabling/Disabling Flags
+
+<Steps>
+  <Step title="Navigate to Flags">
+    Open `chrome://flags` in your address bar
+  </Step>
+  
+  <Step title="Find Your Flag">
+    Use the search box or scroll to find the flag you want to modify
+  </Step>
+  
+  <Step title="Change Setting">
+    Click the dropdown next to the flag and select your desired option:
+    - **Default**: Use Chromium's default behavior
+    - **Enabled**: Force enable the feature
+    - **Disabled**: Force disable the feature
+    - (Some flags have additional options)
+  </Step>
+  
+  <Step title="Restart Browser">
+    Click the "Relaunch" button that appears at the bottom of the page
+  </Step>
+</Steps>
+
+### Resetting Flags
+
+To reset all flags to their defaults:
+
+1. Navigate to `chrome://flags`
+2. Click "Reset all" at the top of the page
+3. Restart the browser
+
+<Warning>
+Resetting flags cannot be undone. Make note of any custom flag configurations before resetting.
+</Warning>
+
+## Command Line Flags
+
+Some flags can be set via command line arguments:
+
+<Tabs>
+  <Tab title="macOS">
+    ```bash
+    # Example: Disable ECH via command line
+    /Applications/Helium.app/Contents/MacOS/Helium --disable-ech
+    
+    # Example: Set update channel
+    /Applications/Helium.app/Contents/MacOS/Helium --helium-update-channel=beta
+    ```
+  </Tab>
+  
+  <Tab title="Linux">
+    ```bash
+    # Example: Disable ECH via command line
+    helium --disable-ech
+    
+    # Example: Set energy saver frame rate
+    helium --energy-saver-fps-limit=60
+    ```
+  </Tab>
+  
+  <Tab title="Windows">
+    ```cmd
+    # Example: Disable ECH via command line
+    "C:\Program Files\Helium\helium.exe" --disable-ech
+    
+    # Example: Set update channel
+    "C:\Program Files\Helium\helium.exe" --helium-update-channel=beta
+    ```
+  </Tab>
+</Tabs>
+
+<Note>
+Command line flags override flags set in `chrome://flags`. They're useful for testing or automation.
+</Note>
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Test Carefully" icon="flask">
+    Enable experimental flags one at a time and test thoroughly before enabling more. This helps identify which flag causes issues if problems arise.
+  </Card>
+  
+  <Card title="Document Changes" icon="file-lines">
+    Keep a list of flags you've enabled, especially if you modify many. This makes troubleshooting easier.
+  </Card>
+  
+  <Card title="Update Awareness" icon="arrow-up">
+    Some flags may be removed, promoted to standard features, or changed in behavior after updates.
+  </Card>
+  
+  <Card title="Privacy First" icon="shield">
+    Be cautious with flags that enable new features, as they may introduce tracking or privacy issues not yet addressed in Helium.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Browser Crashes After Enabling Flag">
+    1. Restart the browser in safe mode (disable all flags temporarily)
+    2. Navigate to `chrome://flags`
+    3. Click "Reset all"
+    4. Restart normally
+    
+    If crashes persist, check the browser console for errors or report the issue on GitHub.
+  </Accordion>
+  
+  <Accordion title="Flag Not Taking Effect">
+    1. Verify you restarted the browser after changing the flag
+    2. Check if the flag requires additional conditions (e.g., specific platform, other flags enabled)
+    3. Try setting the flag via command line to ensure it's being applied
+    4. Check the browser console (`Ctrl/Cmd + Shift + J`) for related errors
+  </Accordion>
+  
+  <Accordion title="Can't Find a Specific Flag">
+    1. Use the search box - flag names may not match your expectations
+    2. Check if the flag has been promoted to a standard setting (check Settings)
+    3. Some flags are platform-specific and may not appear on your OS
+    4. The flag may have been removed in your version of Helium
+  </Accordion>
+</AccordionGroup>
+
+## Related Pages
+
+<CardGroup cols={3}>
+  <Card title="Settings Guide" icon="gear" href="/usage/settings">
+    Standard settings that don't require experimental flags
+  </Card>
+  
+  <Card title="Updates" icon="arrow-up" href="/usage/updates">
+    Learn about update channels and the update channel flag
+  </Card>
+  
+  <Card title="Keyboard Shortcuts" icon="keyboard" href="/usage/keyboard-shortcuts">
+    Configure keyboard behavior including middle-click actions
+  </Card>
+</CardGroup>

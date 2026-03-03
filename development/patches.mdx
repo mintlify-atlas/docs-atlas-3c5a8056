@@ -1,0 +1,516 @@
+---
+title: 'Working with Patches'
+description: 'Understanding and modifying Helium patches'
+---
+
+## Overview
+
+Helium uses a **patch-based development model** inherited from ungoogled-chromium. Instead of maintaining a forked Chromium repository, all modifications are stored as unified diff patches in GNU Quilt format.
+
+## Why Patches?
+
+<CardGroup cols={2}>
+  <Card title="Upstream Compatibility" icon="arrows-rotate">
+    Easy to rebase on new Chromium versions by reapplying patches
+  </Card>
+  
+  <Card title="Clear Attribution" icon="user-tag">
+    Each patch is clearly sourced (ungoogled-chromium, Brave, Helium, etc.)
+  </Card>
+  
+  <Card title="Modular Changes" icon="puzzle-piece">
+    Individual features can be enabled/disabled by including/excluding patches
+  </Card>
+  
+  <Card title="Review-Friendly" icon="magnifying-glass">
+    Changes are isolated and easy to review individually
+  </Card>
+</CardGroup>
+
+## Patch Directory Structure
+
+Patches are organized by source and category:
+
+```
+patches/
+├── series                          # Defines patch application order
+├── upstream-fixes/                 # Backported fixes from Chromium
+│   └── vertical/                   # Vertical tabs feature patches
+├── inox-patchset/                  # Privacy patches from Inox
+├── iridium-browser/                # Privacy patches from Iridium
+├── ungoogled-chromium/             # Core degoogling patches
+├── bromite/                        # Fingerprinting protection
+├── brave/                          # Import and tab features
+├── debian/                         # Debian-specific patches
+└── helium/
+    ├── core/                       # Core Helium functionality
+    │   ├── search/                 # Search engine configuration
+    │   └── noise/                  # Fingerprinting noise
+    ├── settings/                   # Settings page modifications
+    ├── hop/                        # Password manager replacement
+    └── ui/                         # User interface changes
+        └── layout/                 # Layout system changes
+```
+
+## The Series File
+
+The `patches/series` file defines the order in which patches are applied:
+
+```text
+# Upstream fixes first
+upstream-fixes/missing-dependencies.patch
+upstream-fixes/vertical/r1568708-fix-crash-during-collapsed-tabgroup-drag.patch
+...
+
+# Then third-party privacy patches
+inox-patchset/fix-building-without-safebrowsing.patch
+inox-patchset/disable-autofill-download-manager.patch
+...
+
+# Finally Helium patches
+helium/core/add-zen-importer.patch
+helium/core/services-prefs.patch
+...
+```
+
+<Warning>
+Patch order matters! Later patches may depend on earlier ones. Always maintain the order defined in `series`.
+</Warning>
+
+## Applying Patches
+
+Use the `patches.py` utility to apply patches:
+
+### Basic Application
+
+```bash
+# Apply all patches from patches/series
+python3 utils/patches.py apply chromium patches
+```
+
+### Advanced Options
+
+<CodeGroup>
+```bash Strict Mode
+# Apply without fuzz (fail if patches don't apply exactly)
+python3 utils/patches.py apply chromium patches --no-fuzz
+```
+
+```bash Custom Patch Directory
+# Apply patches from a different directory
+python3 utils/patches.py apply chromium my-custom-patches
+```
+
+```bash Custom Patch Binary
+# Use a specific patch binary
+python3 utils/patches.py apply \
+  --patch-bin /usr/local/bin/gpatch \
+  chromium patches
+```
+</CodeGroup>
+
+### Dry Run Testing
+
+Test if patches will apply cleanly without modifying files:
+
+```python
+from pathlib import Path
+from utils.patches import dry_run_check
+
+patch_path = Path('patches/helium/core/services-prefs.patch')
+tree_path = Path('chromium')
+
+code, stdout, stderr = dry_run_check(patch_path, tree_path)
+if code == 0:
+    print("Patch will apply cleanly")
+else:
+    print(f"Patch failed: {stderr}")
+```
+
+## Creating New Patches
+
+<Steps>
+  <Step title="Make Changes">
+    Edit files in the Chromium source tree:
+    
+    ```bash
+    cd chromium
+    # Make your changes to source files
+    vim src/chrome/browser/ui/browser.cc
+    ```
+  </Step>
+  
+  <Step title="Generate Diff">
+    Create a unified diff of your changes:
+    
+    ```bash
+    # From inside the chromium directory
+    git diff > ../patches/helium/core/my-new-feature.patch
+    ```
+  </Step>
+  
+  <Step title="Add to Series">
+    Add your patch to `patches/series` in the appropriate location:
+    
+    ```bash
+    # Edit patches/series
+    vim ../patches/series
+    
+    # Add your patch line:
+    # helium/core/my-new-feature.patch
+    ```
+  </Step>
+  
+  <Step title="Test Application">
+    Verify your patch applies cleanly:
+    
+    ```bash
+    cd ..
+    # Reset changes
+    cd chromium
+    git checkout .
+    cd ..
+    
+    # Apply all patches including your new one
+    python3 utils/patches.py apply chromium patches
+    ```
+  </Step>
+  
+  <Step title="Build and Test">
+    Build Helium and test your changes:
+    
+    ```bash
+    cd chromium
+    ninja -C out/Default chrome
+    ./out/Default/chrome
+    ```
+  </Step>
+</Steps>
+
+## Patch File Format
+
+Patches use the unified diff format:
+
+```diff
+--- a/chrome/browser/ui/browser.cc
++++ b/chrome/browser/ui/browser.cc
+@@ -150,6 +150,10 @@ Browser::Browser(const CreateParams& params)
+       tab_strip_model_delegate_(std::make_unique<BrowserTabStripModelDelegate>(this)),
+       tab_menu_model_delegate_(std::make_unique<BrowserTabMenuModelDelegate>(this)) {
+   
++  // Helium: Set custom window title
++  if (params.type == TYPE_NORMAL) {
++    override_window_title_ = "Helium";
++  }
+   
+   // Set up the app_controller_ before calling Init() so that it will be available
+   // for any code that runs during initialization.
+```
+
+### Patch Header Format
+
+```diff
+--- a/path/to/file.cc    # Original file path (a/ prefix)
++++ b/path/to/file.cc    # Modified file path (b/ prefix)
+@@ -150,6 +150,10 @@     # Hunk header: line numbers and context
+```
+
+- `@@ -150,6` means original file, starting at line 150, showing 6 lines
+- `+150,10` means modified file, starting at line 150, showing 10 lines
+- Lines starting with `-` are removed
+- Lines starting with `+` are added
+- Lines starting with space are context (unchanged)
+
+## Modifying Existing Patches
+
+<Steps>
+  <Step title="Apply Patches Up To Target">
+    Apply all patches before the one you want to modify:
+    
+    ```bash
+    # Manually apply patches in order until the one before yours
+    # Or create a temporary series file
+    head -n 100 patches/series > patches/series.tmp
+    python3 utils/patches.py apply chromium patches/series.tmp
+    ```
+  </Step>
+  
+  <Step title="Make Changes">
+    Edit the files affected by the patch you want to modify
+  </Step>
+  
+  <Step title="Regenerate Patch">
+    Create an updated patch:
+    
+    ```bash
+    cd chromium
+    git diff > ../patches/helium/core/my-patch.patch
+    ```
+  </Step>
+  
+  <Step title="Verify">
+    Test that all patches still apply in order:
+    
+    ```bash
+    cd chromium
+    git checkout .  # Reset all changes
+    cd ..
+    python3 utils/patches.py apply chromium patches
+    ```
+  </Step>
+</Steps>
+
+<Warning>
+When modifying patches, ensure subsequent patches don't conflict with your changes. You may need to update multiple patches if they affect the same files.
+</Warning>
+
+## Patch Categories Explained
+
+### Upstream Fixes (48 patches)
+
+Backported features from newer Chromium versions:
+
+```
+upstream-fixes/vertical/               # Vertical tabs implementation
+├── r1568708-fix-crash-during-collapsed-tabgroup-drag.patch
+├── r1570045-improve-dragging-between-groups-and-unpinned.patch
+└── ... (45 more patches)
+```
+
+<Info>
+These patches are prefixed with `rXXXXXXX` indicating the Chromium revision they came from.
+</Info>
+
+### ungoogled-chromium (46 patches)
+
+Core privacy and degoogling features:
+
+<AccordionGroup>
+  <Accordion title="Blocking & Disabling" icon="ban">
+    ```
+    disable-crash-reporter.patch
+    disable-google-host-detection.patch
+    disable-gcm.patch
+    disable-domain-reliability.patch
+    block-trk-and-subdomains.patch
+    ```
+    
+    Disable Google services and tracking connections.
+  </Accordion>
+  
+  <Accordion title="Privacy Features" icon="shield">
+    ```
+    disable-gaia.patch                    # No Google account sync
+    disable-profile-avatar-downloading.patch
+    disable-privacy-sandbox.patch
+    disable-webrtc-log-uploader.patch
+    ```
+    
+    Disable features that compromise privacy.
+  </Accordion>
+  
+  <Accordion title="Customization Flags" icon="flag">
+    ```
+    add-components-ungoogled.patch
+    add-ipv6-probing-option.patch
+    add-flag-to-configure-extension-downloading.patch
+    add-flag-for-search-engine-collection.patch
+    add-flag-to-force-punycode-hostnames.patch
+    ```
+    
+    Add command-line flags for privacy customization.
+  </Accordion>
+</AccordionGroup>
+
+### Helium Core (85 patches)
+
+Helium-specific functionality:
+
+<Tabs>
+  <Tab title="Services & Integration">
+    ```
+    helium/core/services-prefs.patch           # Helium Services integration
+    helium/core/onboarding-page.patch          # Welcome page
+    helium/core/change-chromium-branding.patch # Rebrand to Helium
+    helium/core/ublock-install-as-component.patch
+    helium/core/ublock-helium-services.patch
+    ```
+  </Tab>
+  
+  <Tab title="Search">
+    ```
+    helium/core/search/restore-google.patch
+    helium/core/search/engine-defaults.patch
+    helium/core/search/fix-search-engine-icons.patch
+    helium/core/search/force-eu-search-features.patch
+    ```
+  </Tab>
+  
+  <Tab title="Privacy Enhancements">
+    ```
+    helium/core/noise/core.patch               # Base fingerprinting noise
+    helium/core/noise/canvas.patch             # Canvas fingerprinting
+    helium/core/noise/audio.patch              # AudioContext fingerprinting
+    helium/core/noise/hardware-concurrency.patch
+    helium/core/reduce-accept-language-headers.patch
+    helium/core/disable-ad-topics-and-etc.patch
+    ```
+  </Tab>
+  
+  <Tab title="Features">
+    ```
+    helium/core/add-native-bangs.patch         # DuckDuckGo-style !bangs
+    helium/core/split-view.patch               # Window split view
+    helium/core/tab-cycling-mru.patch          # MRU tab switching
+    helium/core/enable-parallel-downloading.patch
+    helium/core/infinite-tab-freezing.patch
+    ```
+  </Tab>
+</Tabs>
+
+### Helium UI (86 patches)
+
+User interface modifications:
+
+```
+helium/ui/
+├── layout/                       # Core layout system
+│   ├── core.patch
+│   ├── settings.patch
+│   ├── compact.patch
+│   └── vertical.patch
+├── location-bar.patch            # Address bar design
+├── omnibox.patch                 # Omnibox functionality
+├── tabs.patch                    # Tab styling
+├── toolbar.patch                 # Toolbar design
+├── app-menu-*.patch              # Application menu
+└── helium-color-scheme.patch     # Color theme
+```
+
+## Validating Patches
+
+Use the development utilities to validate patches:
+
+```bash
+# Validate all patches apply cleanly
+./devutils/validate_patches.py -l chromium -v
+
+# Check patches follow style guidelines
+python3 -m pylint patches/*.py
+```
+
+## Merging Patch Directories
+
+Combine patches from multiple sources:
+
+```bash
+# Merge two patch directories
+python3 utils/patches.py merge \
+  destination_patches \
+  source1_patches \
+  source2_patches
+
+# Prepend patches to existing directory
+python3 utils/patches.py merge \
+  --prepend \
+  existing_patches \
+  new_patches
+```
+
+## Best Practices
+
+<CardGroup cols={2}>
+  <Card title="Keep Patches Small" icon="minimize">
+    Each patch should implement one logical change. Easier to review, debug, and maintain.
+  </Card>
+  
+  <Card title="Document Changes" icon="file-lines">
+    Add comments in patch files explaining why changes were made:
+    
+    ```diff
+    +  // Helium: Disable password manager
+    +  // We use our own password management solution
+    +  return false;
+    ```
+  </Card>
+  
+  <Card title="Test Patch Order" icon="list-ol">
+    After adding/modifying patches, always test that all patches apply cleanly in series order.
+  </Card>
+  
+  <Card title="Attribution" icon="quote-left">
+    If a patch is based on work from another project, note it in the patch filename or header.
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### Patch Doesn't Apply
+
+```bash
+# Check which files are conflicting
+python3 utils/patches.py apply chromium patches --no-fuzz
+
+# Look for:
+# "Hunk #1 FAILED at line 150"
+# This means the code context changed
+```
+
+**Solutions:**
+1. Manually update the patch context to match current code
+2. Regenerate the patch from scratch
+3. Check if upstream Chromium changed the affected code
+
+### Patches Apply But Build Fails
+
+```bash
+# Check if all required patches are present
+grep "^helium/core/" patches/series
+
+# Verify patch order
+cat patches/series | grep -A5 -B5 "your-patch.patch"
+```
+
+**Common causes:**
+- Patch depends on another patch that wasn't applied
+- Patch conflicts with a later patch
+- Build configuration doesn't match patched code
+
+### Fuzz Warnings
+
+```
+patching file chrome/browser/ui/browser.cc
+Hunk #1 succeeded at 152 (offset 2 lines).
+```
+
+<Info>
+Fuzz means the patch applied but line numbers didn't match exactly. Usually safe, but verify the changes are correct.
+</Info>
+
+## CI Patch Validation
+
+Helium's CI automatically validates patches:
+
+```yaml
+# From .cirrus.yml
+validate_patches_script:
+  - ./devutils/validate_patches.py -l chromium_src -v
+```
+
+This ensures:
+- All patches in series file exist
+- Patches apply cleanly to the target Chromium version
+- No syntax errors in patch files
+- Correct file paths in patches
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Development Overview" icon="book" href="./overview">
+    Learn about Helium's overall architecture
+  </Card>
+  
+  <Card title="Building Helium" icon="hammer" href="./building">
+    Build Helium with your modified patches
+  </Card>
+</CardGroup>

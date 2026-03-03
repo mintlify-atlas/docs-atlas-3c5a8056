@@ -1,0 +1,187 @@
+---
+title: "deps.ini Reference"
+description: "Configuration for additional Helium dependencies"
+---
+
+## Overview
+
+The `deps.ini` file defines additional resources that are downloaded after cloning the Chromium source code. This includes search engine data, the onboarding page, and bundled extensions like uBlock Origin.
+
+<Warning>
+  These dependencies are downloaded separately from the main Chromium source. They will not work if placed in `downloads.ini`.
+</Warning>
+
+## File Format
+
+The file uses INI format with sections for each dependency:
+
+```ini
+[section_name]
+key = value
+```
+
+Comments start with `#` and are ignored during parsing.
+
+## Common Fields
+
+Every dependency section typically includes:
+
+<ParamField path="url" type="string" required>
+  Download URL for the resource. Supports variable substitution using `%(variable_name)s` syntax.
+</ParamField>
+
+<ParamField path="download_filename" type="string" required>
+  Filename to use when saving the downloaded file locally.
+</ParamField>
+
+<ParamField path="sha256" type="string" required>
+  SHA-256 hash for integrity verification. The build will fail if the downloaded file doesn't match this hash.
+</ParamField>
+
+<ParamField path="output_path" type="string" required>
+  Relative path (from source root) where the downloaded resource should be extracted or placed.
+</ParamField>
+
+<ParamField path="version" type="string">
+  Version identifier for the resource. Can be referenced in `url` and `download_filename` using `%(version)s`.
+</ParamField>
+
+<ParamField path="strip_leading_dirs" type="string">
+  Directory name to strip from the archive. Useful when archives contain a single top-level directory you want to remove.
+</ParamField>
+
+## Dependencies
+
+### Search Engines Data
+
+<CodeGroup>
+```ini [search_engines_data]
+url = https://gist.githubusercontent.com/wukko/2a591364dda346e10219e4adabd568b1/raw/e75ae3c4a1ce940ef7627916a48bc40882d24d40/nonfree-search-engines-data.tar.gz
+download_filename = nonfree-search-engines-data.tar.gz
+sha256 = 00a87050fa3f941d04d67fb5763991e0b8ea399a88b505ab0e56dd263f06864c
+output_path = ./third_party/search_engines_data/resources_internal
+```
+</CodeGroup>
+
+Contains search engine definitions, icons, and metadata for Helium's search functionality.
+
+<Note>
+  This data is considered "nonfree" because some search engine logos may have licensing restrictions.
+</Note>
+
+### Onboarding Page
+
+<CodeGroup>
+```ini [onboarding]
+version = 202601021937
+url = https://github.com/imputnet/helium-onboarding/releases/download/%(version)s/helium-onboarding-%(version)s.tar.gz
+download_filename = onboarding-page-%(version)s.tar.gz
+sha256 = c8a1f906cf6461179d4fd311c529f0f8e01fb21b63ef179f593a24190c5dca80
+output_path = ./components/helium_onboarding
+```
+</CodeGroup>
+
+The first-run onboarding experience shown when Helium is launched for the first time.
+
+**Version format**: `YYYYMMDDHHSS` (timestamp)
+
+**Properties**:
+- Built from separate repository: `imputnet/helium-onboarding`
+- Includes welcome screens, privacy explanations, and initial setup
+- Extracted to Chromium components directory
+
+### uBlock Origin
+
+<CodeGroup>
+```ini [ublock_origin]
+version = 1.69.0-2
+url = https://github.com/imputnet/uBlock/releases/download/%(version)s/uBlock0_%(version)s.chromium.zip
+sha256 = fdc0607538082b409833acd2a80f3a2d657b2af70813a9a8e8e5c7a9938f7e29
+download_filename = ublock-origin-%(version)s.zip
+output_path = third_party/ublock
+strip_leading_dirs = uBlock0.chromium
+```
+</CodeGroup>
+
+Helium's bundled ad blocker, based on uBlock Origin.
+
+<Warning>
+  **Important**: When bumping the version, you MUST re-strip the `assets.json` file using `devutils/clear-ublock-assets.js` every time.
+</Warning>
+
+**Properties**:
+- Custom fork maintained at: `imputnet/uBlock`
+- Installed as a component extension (built-in, not from Web Store)
+- Version format: `MAJOR.MINOR.PATCH-REVISION`
+- Archive contains a top-level `uBlock0.chromium` directory that gets stripped
+
+**Maintenance workflow**:
+1. Update the `version` field
+2. Download the new release and compute SHA-256
+3. Update the `sha256` field
+4. Run `devutils/clear-ublock-assets.js` to strip assets
+5. Test the build
+
+## Variable Substitution
+
+You can use variables in `url` and `download_filename` fields:
+
+```ini
+version = 1.2.3
+url = https://example.com/package-%(version)s.tar.gz
+download_filename = package-%(version)s.tar.gz
+```
+
+This expands to:
+- URL: `https://example.com/package-1.2.3.tar.gz`
+- Filename: `package-1.2.3.tar.gz`
+
+## Adding New Dependencies
+
+<Steps>
+  <Step title="Create a new section">
+    Add a section with a descriptive name:
+    ```ini
+    [my_component]
+    ```
+  </Step>
+  
+  <Step title="Define required fields">
+    Add URL, filename, hash, and output path:
+    ```ini
+    url = https://example.com/component.tar.gz
+    download_filename = component.tar.gz
+    sha256 = <compute hash>
+    output_path = ./third_party/my_component
+    ```
+  </Step>
+  
+  <Step title="Add optional fields">
+    Include version and strip_leading_dirs if needed:
+    ```ini
+    version = 1.0.0
+    strip_leading_dirs = component-1.0.0
+    ```
+  </Step>
+  
+  <Step title="Test the build">
+    Run the build process to verify the dependency downloads and extracts correctly.
+  </Step>
+</Steps>
+
+## Security Considerations
+
+<Warning>
+  Always verify SHA-256 hashes when adding or updating dependencies. This ensures the downloaded files haven't been tampered with.
+</Warning>
+
+- Use HTTPS URLs whenever possible
+- Pin specific versions rather than using "latest" tags
+- Prefer releases from trusted sources (GitHub releases, official CDNs)
+- Document the purpose and origin of each dependency
+
+## Related Configuration
+
+- [downloads.ini](/reference/downloads-ini) - Main Chromium source download
+- [flags.gn](/reference/flags-gn) - Build configuration flags
+- [patches/series](/reference/patches-series) - Patches applied to source

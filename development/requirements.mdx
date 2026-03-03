@@ -1,0 +1,403 @@
+---
+title: 'Build Requirements'
+description: 'System requirements and prerequisites for building Helium'
+---
+
+## System Requirements
+
+Building Helium requires substantial system resources due to the size of the Chromium codebase.
+
+### Minimum Hardware
+
+<CardGroup cols={2}>
+  <Card title="CPU" icon="microchip">
+    **8+ cores recommended**
+    
+    More cores significantly reduce build time. Chromium builds are highly parallel.
+  </Card>
+  
+  <Card title="RAM" icon="memory">
+    **16GB minimum, 32GB+ recommended**
+    
+    The linker phase requires substantial memory. 32GB or more is strongly recommended.
+  </Card>
+  
+  <Card title="Disk Space" icon="hard-drive">
+    **100GB+ free space**
+    
+    - Chromium source: ~30GB
+    - Build output: 40-60GB
+    - Additional overhead: 20GB+
+  </Card>
+  
+  <Card title="Build Time" icon="clock">
+    **2-8 hours**
+    
+    Varies based on CPU, RAM, and disk speed. First build is always longest.
+  </Card>
+</CardGroup>
+
+<Warning>
+**Insufficient RAM** can cause the build to fail during the linking phase. If you have less than 32GB RAM, consider:
+- Using `use_lld=false` to use the system linker
+- Limiting parallel jobs with `ninja -j4` instead of using all cores
+- Enabling swap space (will significantly slow the build)
+</Warning>
+
+## Operating System Support
+
+Helium can be built on the following platforms:
+
+<Tabs>
+  <Tab title="Linux">
+    ### Linux (Recommended for Development)
+    
+    **Supported Distributions:**
+    - Ubuntu 20.04 LTS or newer
+    - Debian 11 or newer
+    - Fedora 36 or newer
+    - Arch Linux (rolling)
+    
+    **Kernel Requirements:**
+    - Linux kernel 5.4 or newer
+    
+    Linux provides the best build experience with excellent tooling support and faster builds.
+  </Tab>
+  
+  <Tab title="macOS">
+    ### macOS
+    
+    **Supported Versions:**
+    - macOS 12.0 (Monterey) or newer
+    - macOS 13.0 (Ventura) recommended
+    - macOS 14.0 (Sonoma) supported
+    
+    **Architecture:**
+    - Intel (x86_64)
+    - Apple Silicon (arm64)
+    - Universal builds require building on both architectures
+    
+    <Note>
+    Xcode Command Line Tools are required (see Software Requirements below).
+    </Note>
+  </Tab>
+  
+  <Tab title="Windows">
+    ### Windows
+    
+    **Supported Versions:**
+    - Windows 10 version 1809 or newer
+    - Windows 11 (all versions)
+    
+    **Requirements:**
+    - Windows 10 SDK (version 10.0.20348 or newer)
+    - Visual Studio 2022 (Community Edition or higher)
+    
+    <Warning>
+    Windows builds require additional setup and are more complex than Linux builds. Consider using WSL2 with Linux for development.
+    </Warning>
+  </Tab>
+</Tabs>
+
+## Software Requirements
+
+### Essential Tools
+
+The following tools are required for all platforms:
+
+#### Python 3
+
+```bash
+# Check Python version (3.8 or newer required)
+python3 --version
+```
+
+Helium's build scripts require Python 3.8 or newer.
+
+#### Git
+
+```bash
+# Check Git version (2.30 or newer recommended)
+git --version
+```
+
+Required for cloning Chromium source and managing patches.
+
+#### GNU Patch
+
+```bash
+# Check patch utility
+patch --version
+```
+
+Required for applying patches. Set `PATCH_BIN` environment variable if using a custom location.
+
+### Platform-Specific Requirements
+
+<Tabs>
+  <Tab title="Linux">
+    ### Linux Build Dependencies
+    
+    #### Debian/Ubuntu
+    
+    ```bash
+    # Install build dependencies
+    sudo apt-get update
+    sudo apt-get install -y \
+      build-essential \
+      git \
+      python3 \
+      python3-pip \
+      ninja-build \
+      pkg-config \
+      libglib2.0-dev \
+      libgtk-3-dev \
+      libpango1.0-dev \
+      libdbus-1-dev \
+      libatk1.0-dev \
+      libatk-bridge2.0-dev \
+      libcups2-dev \
+      libdrm-dev \
+      libxkbcommon-dev \
+      libgbm-dev \
+      libasound2-dev \
+      libpulse-dev \
+      libnss3-dev \
+      libxss-dev \
+      libxtst-dev \
+      libpci-dev \
+      curl
+    ```
+    
+    #### Fedora/RHEL
+    
+    ```bash
+    # Install build dependencies
+    sudo dnf install -y \
+      @development-tools \
+      git \
+      python3 \
+      python3-pip \
+      ninja-build \
+      pkg-config \
+      glib2-devel \
+      gtk3-devel \
+      pango-devel \
+      dbus-devel \
+      atk-devel \
+      at-spi2-atk-devel \
+      cups-devel \
+      libdrm-devel \
+      libxkbcommon-devel \
+      mesa-libgbm-devel \
+      alsa-lib-devel \
+      pulseaudio-libs-devel \
+      nss-devel \
+      libXScrnSaver-devel \
+      libXtst-devel \
+      pciutils-devel \
+      curl
+    ```
+    
+    #### Arch Linux
+    
+    ```bash
+    # Install build dependencies
+    sudo pacman -S --needed \
+      base-devel \
+      git \
+      python \
+      python-pip \
+      ninja \
+      pkg-config \
+      glib2 \
+      gtk3 \
+      pango \
+      dbus \
+      atk \
+      at-spi2-core \
+      cups \
+      libdrm \
+      libxkbcommon \
+      mesa \
+      alsa-lib \
+      pulseaudio \
+      nss \
+      libxss \
+      libxtst \
+      pciutils \
+      curl
+    ```
+  </Tab>
+  
+  <Tab title="macOS">
+    ### macOS Build Dependencies
+    
+    #### Xcode Command Line Tools
+    
+    ```bash
+    # Install Xcode Command Line Tools
+    xcode-select --install
+    ```
+    
+    #### Homebrew Packages
+    
+    ```bash
+    # Install Homebrew if not already installed
+    /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+    
+    # Install build dependencies
+    brew install \
+      git \
+      python@3.11 \
+      ninja \
+      pkg-config
+    ```
+    
+    <Note>
+    macOS includes most required libraries. Additional dependencies are managed by the build system.
+    </Note>
+  </Tab>
+  
+  <Tab title="Windows">
+    ### Windows Build Dependencies
+    
+    #### Visual Studio 2022
+    
+    Download and install Visual Studio 2022 with the following workloads:
+    - Desktop development with C++
+    - Windows 10 SDK (10.0.20348.0 or newer)
+    
+    #### Additional Tools
+    
+    ```powershell
+    # Install Chocolatey (if not installed)
+    Set-ExecutionPolicy Bypass -Scope Process -Force
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+    iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+    
+    # Install build tools
+    choco install -y git python3 ninja
+    ```
+    
+    <Warning>
+    Windows builds also require setting up the Visual Studio environment variables. Use the "Developer Command Prompt for VS 2022" or "Developer PowerShell for VS 2022".
+    </Warning>
+  </Tab>
+</Tabs>
+
+### Optional Tools
+
+These tools can improve the build experience:
+
+<CardGroup cols={2}>
+  <Card title="ccache" icon="bolt">
+    **Compiler cache**
+    
+    Speeds up rebuilds by caching compilation results.
+    
+    ```bash
+    # Linux
+    sudo apt-get install ccache
+    
+    # macOS
+    brew install ccache
+    ```
+  </Card>
+  
+  <Card title="curl" icon="download">
+    **Download tool**
+    
+    Preferred over Python's urllib for downloads (supports resume).
+    
+    Usually pre-installed on Linux and macOS.
+  </Card>
+</CardGroup>
+
+## Python Dependencies
+
+Helium's build scripts use the following Python packages:
+
+```bash
+# Install from requirements file
+pip3 install -r utils/requirements.txt
+
+# Or install manually
+pip3 install schema
+```
+
+<Note>
+The `schema` package is used for validating `downloads.ini` and `deps.ini` configuration files.
+</Note>
+
+## Archive Extraction Tools
+
+Required for unpacking downloaded components:
+
+### Linux/macOS
+
+- **tar** - GNU or BSD tar (usually pre-installed)
+- **7z** - Optional, for 7-Zip archives
+
+```bash
+# Linux
+sudo apt-get install p7zip-full  # Debian/Ubuntu
+sudo dnf install p7zip          # Fedora
+
+# macOS
+brew install p7zip
+```
+
+### Windows
+
+- **7-Zip** or **WinRAR** - Required for archive extraction
+- Download from [7-zip.org](https://www.7-zip.org/) or [rarlab.com](https://www.rarlab.com/)
+
+## Disk Space Breakdown
+
+Typical disk usage during build:
+
+```
+Chromium source tree:           ~30 GB
+Build artifacts (out/):         40-60 GB
+Download cache:                  ~2 GB
+depot_tools and utilities:       ~1 GB
+Patch working space:             ~5 GB
+────────────────────────────────────────
+Total:                          80-100 GB
+```
+
+<Tip>
+Use an SSD for the build directory. Build times on SSD are significantly faster than on HDD.
+</Tip>
+
+## Verification
+
+Verify your system meets the requirements:
+
+```bash
+# Check Python version
+python3 --version  # Should be 3.8 or newer
+
+# Check Git version
+git --version  # Should be 2.30 or newer
+
+# Check available disk space
+df -h  # Linux/macOS
+
+# Check available memory
+free -h  # Linux
+vm_stat  # macOS
+
+# Check CPU cores
+nproc  # Linux
+sysctl -n hw.ncpu  # macOS
+```
+
+## Next Steps
+
+Once your system meets all requirements, proceed to:
+
+<Card title="Building Helium" icon="hammer" href="./building">
+  Learn how to clone the source and build Helium from scratch
+</Card>

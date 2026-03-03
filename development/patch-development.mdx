@@ -1,0 +1,341 @@
+---
+title: Patch Development
+description: Learn how to develop, validate, and maintain patches for Helium browser
+---
+
+## Overview
+
+Helium uses GNU Quilt-formatted patches to modify Chromium's source code. Patches are the primary mechanism for implementing privacy features, removing bloat, and customizing the browser experience.
+
+## Patch Organization
+
+Patches are organized in the `patches/` directory with two main categories:
+
+<Tabs>
+  <Tab title="ungoogled-chromium">
+    Patches inherited from ungoogled-chromium that:
+    - Remove Google integration
+    - Disable telemetry and tracking
+    - Add privacy-enhancing features
+    - Customize browser behavior
+    
+    Examples:
+    - `disable-google-host-detection.patch`
+    - `disable-crash-reporter.patch`
+    - `add-ipv6-probing-option.patch`
+  </Tab>
+  <Tab title="upstream-fixes">
+    Patches backported from Chromium upstream:
+    - Bug fixes
+    - Feature improvements
+    - Vertical tab functionality
+    - Missing dependencies
+    
+    Examples:
+    - `missing-dependencies.patch`
+    - Vertical tab patches (r1568708, r1570045, etc.)
+  </Tab>
+</Tabs>
+
+## Setting Up Your Environment
+
+Before developing patches, configure your environment for GNU Quilt:
+
+<CodeGroup>
+```bash Bash
+# Source the quilt configuration
+source ./devutils/set_quilt_vars.sh
+```
+
+```fish Fish Shell
+# For Fish shell users
+source ./devutils/set_quilt_vars.fish
+```
+</CodeGroup>
+
+This sets up essential environment variables:
+
+- `QUILT_PATCHES` - Points to the patches directory
+- `QUILT_DIFF_ARGS` - Formatting options for diffs
+- `QUILT_REFRESH_ARGS` - Options for refreshing patches
+- `LC_ALL=C` - Ensures consistent sorting
+
+<Note>
+  The alias `quilt='quilt --quiltrc -'` fixes issues with absolute paths and preserves color output.
+</Note>
+
+## Creating a New Patch
+
+<Steps>
+  <Step title="Navigate to the Chromium source tree">
+    ```bash
+    cd /path/to/chromium/src
+    ```
+  </Step>
+  
+  <Step title="Create a new patch">
+    ```bash
+    quilt new patches/your-category/descriptive-name.patch
+    ```
+    
+    Choose an appropriate category:
+    - `ungoogled-chromium/` - Privacy and debloating patches
+    - `upstream-fixes/` - Backported fixes
+  </Step>
+  
+  <Step title="Add files to the patch">
+    ```bash
+    quilt add path/to/file1.cc
+    quilt add path/to/file2.h
+    ```
+  </Step>
+  
+  <Step title="Make your changes">
+    Edit the files as needed to implement your feature or fix.
+  </Step>
+  
+  <Step title="Refresh the patch">
+    ```bash
+    quilt refresh
+    ```
+    
+    This generates the patch file with proper formatting.
+  </Step>
+  
+  <Step title="Update the series file">
+    Add your patch to `patches/series` in the appropriate location:
+    ```
+    # Privacy features
+    ungoogled-chromium/your-new-patch.patch
+    ```
+  </Step>
+</Steps>
+
+## Patch Best Practices
+
+### Naming Conventions
+
+- Use descriptive, kebab-case names
+- Prefix with category or purpose
+- For upstream patches, include revision number (e.g., `r1570045-`)
+
+Examples:
+- `disable-google-host-detection.patch`
+- `add-flag-to-hide-tab-close-buttons.patch`
+- `r1570045-improve-dragging-between-groups.patch`
+
+### Patch Structure
+
+<Warning>
+  All patch files must end with a newline character. The validation script will fail patches that don't.
+</Warning>
+
+Each patch should:
+- Be focused on a single change or feature
+- Include context lines for clarity
+- Use unified diff format (`-p ab` format)
+- Have no trailing whitespace
+- Be as small as possible while remaining functional
+
+### Writing Patch Headers
+
+Include descriptive headers in your patches:
+
+```diff
+--- a/chrome/browser/some_file.cc
++++ b/chrome/browser/some_file.cc
+@@ -123,6 +123,7 @@
+ // Brief description of what this change does
+ // and why it's necessary for Helium
+ 
+ void SomeFunction() {
++  // Your modification
+   ...
+ }
+```
+
+## Validating Patches
+
+Before submitting patches, run comprehensive validation:
+
+### Check Patch Files
+
+```bash
+./devutils/check_patch_files.py
+```
+
+This validates:
+- All patches exist and are referenced in `series`
+- No duplicate patches in the series file
+- All patches are readable and properly formatted
+
+### Validate Patch Application
+
+<Tabs>
+  <Tab title="Against Remote Source">
+    ```bash
+    ./devutils/validate_patches.py --remote \
+      --series patches/series \
+      --patches patches/
+    ```
+    
+    Downloads required files from Google and validates patches apply cleanly.
+    
+    <Note>
+      Requires the `requests` Python module.
+    </Note>
+  </Tab>
+  
+  <Tab title="Against Local Source">
+    ```bash
+    ./devutils/validate_patches.py --local /path/to/chromium/src \
+      --series patches/series \
+      --patches patches/
+    ```
+    
+    Uses a local, **unmodified** Chromium source tree for validation.
+  </Tab>
+  
+  <Tab title="Cache Remote Files">
+    ```bash
+    ./devutils/validate_patches.py --cache-remote /path/to/cache \
+      --series patches/series \
+      --patches patches/
+    ```
+    
+    Downloads and caches remote files for debugging purposes.
+  </Tab>
+</Tabs>
+
+### Run Complete Validation
+
+```bash
+./devutils/validate_config.py
+```
+
+Validates:
+- All patches exist and apply correctly
+- No duplicate patches in series
+- GN flags are sorted and not duplicated
+- `downloads.ini` conforms to schema
+
+## Updating Platform Patches
+
+When working with platform-specific repositories (macOS, Linux, Windows), use the platform patch utility:
+
+### Merge Patches
+
+```bash
+./devutils/update_platform_patches.py merge /path/to/platform/patches
+```
+
+This:
+1. Creates `series.orig` (backup of platform series)
+2. Creates `series.prepend` (copy of Helium patches)
+3. Merges Helium patches into platform patches
+4. Generates `series.merged`
+
+### Unmerge Patches
+
+```bash
+./devutils/update_platform_patches.py unmerge /path/to/platform/patches
+```
+
+This:
+1. Moves prepended patches back to original location
+2. Applies changes from `series.merged` to `series.orig`
+3. Preserves comments and formatting
+4. Cleans up intermediate files
+
+<Warning>
+  Only unmerge after you've successfully merged. The unmerge process requires `series.orig`, `series.prepend`, and `series.merged` files.
+</Warning>
+
+## Debugging Patch Failures
+
+### Enable Verbose Output
+
+```bash
+./devutils/validate_patches.py --remote --verbose
+```
+
+Provides detailed error information including:
+- Exact lines that failed to match
+- Context from the source file
+- Output from `patch --dry-run`
+
+### Common Issues
+
+<AccordionGroup>
+  <Accordion title="Patch doesn't apply cleanly">
+    **Cause:** The Chromium source has changed since the patch was created.
+    
+    **Solution:**
+    1. Refresh the patch against the current Chromium version
+    2. Resolve conflicts manually
+    3. Re-validate the patch
+  </Accordion>
+  
+  <Accordion title="Missing newline at end of file">
+    **Cause:** Patch file doesn't end with a newline.
+    
+    **Solution:**
+    ```bash
+    echo >> patches/your-patch.patch
+    ```
+  </Accordion>
+  
+  <Accordion title="Duplicate patch in series">
+    **Cause:** The same patch is listed multiple times in `patches/series`.
+    
+    **Solution:** Remove duplicate entries from the series file.
+  </Accordion>
+  
+  <Accordion title="File not found in source tree">
+    **Cause:** The file being patched doesn't exist in the Chromium source.
+    
+    **Solution:**
+    - Verify the Chromium version matches
+    - Check if the file was moved or removed upstream
+    - Update the patch to reflect current source structure
+  </Accordion>
+</AccordionGroup>
+
+## Testing Your Patches
+
+After creating or modifying patches:
+
+<Steps>
+  <Step title="Validate syntax and format">
+    ```bash
+    ./devutils/check_patch_files.py
+    ```
+  </Step>
+  
+  <Step title="Validate application">
+    ```bash
+    ./devutils/validate_patches.py --remote
+    ```
+  </Step>
+  
+  <Step title="Build Helium with your patches">
+    Apply patches to Chromium source and build to ensure no compilation errors.
+  </Step>
+  
+  <Step title="Test functionality">
+    Manually test that your patch achieves the desired behavior without breaking existing features.
+  </Step>
+</Steps>
+
+## Contributing Patches
+
+When submitting patches:
+
+1. **Document the purpose** - Explain what the patch does and why it's needed
+2. **Reference sources** - For upstream patches, include the Chromium revision number
+3. **Test thoroughly** - Validate on multiple platforms if possible
+4. **Follow guidelines** - See [Contributing](/development/contributing) for full requirements
+
+<Note>
+  Patches are the heart of Helium's privacy features. Well-crafted patches make the browser better for everyone.
+</Note>

@@ -1,0 +1,241 @@
+---
+title: Chromium Base & ungoogled-chromium
+description: Understanding Helium's foundation built on Chromium and ungoogled-chromium
+---
+
+Helium is built on top of [ungoogled-chromium](https://github.com/ungoogled-software/ungoogled-chromium), which itself is based on the [Chromium project](https://www.chromium.org/). This page explains what these foundations provide and why they matter.
+
+## What is Chromium?
+
+Chromium is the open-source browser project that forms the foundation of many browsers including Google Chrome, Microsoft Edge, Brave, and others.
+
+<Note>
+  **Chromium ≠ Chrome**: Chromium is the open-source project. Chrome is Google's proprietary browser built on top of Chromium with additional Google services.
+</Note>
+
+### What Chromium Provides
+
+<CardGroup cols={2}>
+  <Card title="Blink Rendering Engine" icon="code">
+    Fast, modern HTML/CSS rendering
+  </Card>
+  <Card title="V8 JavaScript Engine" icon="bolt">
+    High-performance JavaScript execution
+  </Card>
+  <Card title="Web Platform APIs" icon="globe">
+    Complete implementation of web standards
+  </Card>
+  <Card title="Security Sandbox" icon="shield">
+    Multi-process isolation architecture
+  </Card>
+</CardGroup>
+
+## What is ungoogled-chromium?
+
+ungoogled-chromium is a modified version of Chromium that removes Google-specific integration and enhances privacy.
+
+<Note>
+  Helium is proudly based on ungoogled-chromium. It wouldn't be possible to get rid of Google's bloat and establish a development pipeline this quickly without it.
+</Note>
+
+### Key Modifications by ungoogled-chromium
+
+<AccordionGroup>
+  <Accordion title="Dependency Removal" icon="trash">
+    - Removes Google API keys requirement
+    - Strips out Google services integration
+    - Eliminates telemetry and crash reporting
+    - Removes Google account sync infrastructure
+  </Accordion>
+
+  <Accordion title="Privacy Enhancements" icon="eye-slash">
+    - Disables automatic connections to Google services
+    - Removes tracking identifiers
+    - Eliminates Google-specific telemetry
+    - Blocks pre-connections and DNS prefetching to Google domains
+  </Accordion>
+
+  <Accordion title="Binary Patching" icon="wrench">
+    - Applies patches from multiple sources:
+      - [Inox patchset](https://github.com/gcarq/inox-patchset)
+      - [Debian Chromium](https://tracker.debian.org/pkg/chromium-browser)
+      - [Bromite](https://github.com/bromite/bromite)
+      - [Iridium Browser](https://iridiumbrowser.de/)
+  </Accordion>
+
+  <Accordion title="Build System" icon="hammer">
+    - Provides reproducible build configurations
+    - Creates portable binaries
+    - Maintains compatibility with Chromium extensions
+  </Accordion>
+</AccordionGroup>
+
+## Helium's Additions
+
+Helium takes the ungoogled-chromium foundation and adds:
+
+<Steps>
+  <Step title="Privacy-First Design">
+    Enhanced fingerprinting protection, default privacy settings, and noise injection for canvas/audio APIs.
+  </Step>
+  <Step title="Modern UI">
+    Completely redesigned interface with compact layouts, custom theming, and streamlined controls.
+  </Step>
+  <Step title="Optional Services">
+    Privacy-respecting backend services for updates, extensions, and features - all opt-in and self-hostable.
+  </Step>
+  <Step title="Built-in Ad Blocking">
+    uBlock Origin integrated as a component with optimized defaults.
+  </Step>
+</Steps>
+
+## Licensing
+
+The licensing structure reflects the multi-layer architecture:
+
+<Accordion title="Chromium (BSD License)">
+  The core Chromium project is licensed under a BSD-style license, allowing modification and redistribution.
+</Accordion>
+
+<Accordion title="ungoogled-chromium (BSD 3-Clause)">
+  ungoogled-chromium's modifications are licensed under the BSD 3-Clause license:
+
+  ```text
+  BSD 3-Clause License
+  
+  Copyright (c) 2015-2026, The ungoogled-chromium Authors
+  All rights reserved.
+  ```
+
+  **Source**: `~/workspace/source/LICENSE.ungoogled_chromium`
+</Accordion>
+
+<Accordion title="Helium (GPL-3.0)">
+  All Helium-specific code, patches, and modifications are licensed under GPL-3.0:
+
+  - All patches in `patches/helium/`
+  - Custom components in `components/helium_*`
+  - Helium-specific UI modifications
+  - Build system customizations
+
+  Imported code from other projects (like ungoogled-chromium) retains its original license.
+</Accordion>
+
+## Version Alignment
+
+Helium tracks Chromium stable releases:
+
+<Steps>
+  <Step title="Chromium Release">
+    Google releases a new Chromium stable version
+  </Step>
+  <Step title="ungoogled-chromium Update">
+    ungoogled-chromium project updates their patches for the new version
+  </Step>
+  <Step title="Helium Integration">
+    Helium updates its patches and tests compatibility
+  </Step>
+  <Step title="Platform Builds">
+    Each platform repository builds and releases Helium for their OS
+  </Step>
+</Steps>
+
+This ensures Helium users get the latest security updates and web platform features while maintaining privacy enhancements.
+
+## Technical Stack
+
+<CodeGroup>
+```cpp C++ (Core Browser)
+// Helium uses the same stack as Chromium
+// ~20 million lines of C++ code
+// Including Blink, V8, and browser UI
+```
+
+```python Python (Build Tools)
+# Build system and code generation
+# GN (Generate Ninja) for build configuration
+# Python scripts for automation
+```
+
+```typescript TypeScript (WebUI)
+// Settings pages and browser UI
+// Polymer components
+// Chrome Settings framework
+```
+</CodeGroup>
+
+## Dependencies
+
+Helium inherits Chromium's dependencies:
+
+<Tabs>
+  <Tab title="Build Dependencies">
+    - **Ninja**: Fast build system
+    - **GN**: Build file generator
+    - **Clang/LLVM**: Compiler toolchain
+    - **Python 3**: Build scripts
+    - **Node.js**: WebUI build tools
+  </Tab>
+  <Tab title="Runtime Dependencies">
+    - **System libraries**: GTK+ (Linux), Cocoa (macOS), Win32 (Windows)
+    - **Graphics**: Skia, OpenGL/Metal/Direct3D
+    - **Networking**: System SSL/TLS libraries
+    - **Media**: FFmpeg, system codecs
+  </Tab>
+</Tabs>
+
+## Comparison Matrix
+
+| Feature | Chromium | ungoogled-chromium | Helium |
+|---------|----------|-------------------|--------|
+| Google Services | ✅ Integrated | ❌ Removed | ❌ Removed |
+| Telemetry | ✅ Enabled | ❌ Disabled | ❌ Disabled |
+| Sync | ✅ Google Sync | ❌ None | ❌ None |
+| Auto-updates | ✅ Google servers | ❌ None | ⚙️ Optional (Helium services) |
+| Extension updates | ✅ Web Store | ❌ None | ⚙️ Optional (Helium services) |
+| Ad blocking | ❌ None | ❌ None | ✅ Built-in (uBlock Origin) |
+| UI customization | 🔵 Standard | 🔵 Standard | 🟢 Heavily customized |
+| Fingerprinting protection | 🟡 Basic | 🟡 Basic | 🟢 Enhanced |
+| Default privacy | 🔴 Weak | 🟡 Better | 🟢 Strong |
+
+## Why This Matters
+
+By building on ungoogled-chromium, Helium:
+
+<CardGroup cols={2}>
+  <Card title="Maintains Compatibility" icon="check">
+    Works with Chromium extensions and web standards
+  </Card>
+  <Card title="Gets Security Updates" icon="shield">
+    Benefits from Chromium's security team
+  </Card>
+  <Card title="Avoids Reinventing" icon="recycle">
+    Focuses on privacy UX, not building a browser engine
+  </Card>
+  <Card title="Stays Independent" icon="user">
+    No dependency on Google services or infrastructure
+  </Card>
+</CardGroup>
+
+## Contributing Upstream
+
+<Note>
+  Helium intends to contribute improvements back to ungoogled-chromium where applicable.
+</Note>
+
+Contributions may include:
+- Additional privacy patches
+- Build system improvements
+- Documentation enhancements
+- Platform-specific fixes
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture Overview" icon="sitemap" href="/reference/architecture">
+    See how Helium builds on this foundation
+  </Card>
+  <Card title="Helium Services" icon="server" href="/reference/helium-services">
+    Learn about Helium's privacy-respecting services
+  </Card>
+</CardGroup>

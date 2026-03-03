@@ -1,0 +1,205 @@
+---
+title: "downloads.ini Reference"
+description: "Configuration for Chromium source code download"
+---
+
+## Overview
+
+The `downloads.ini` file configures the download of the official Chromium source code archive. This is the base source code that Helium patches and builds upon.
+
+<Note>
+  This file only handles the Chromium source archive. Additional dependencies are configured in [deps.ini](/reference/deps-ini).
+</Note>
+
+## File Format
+
+The file uses INI format with a single `[chromium]` section:
+
+```ini
+[chromium]
+key = value
+```
+
+## Configuration Fields
+
+### Basic Fields
+
+<ParamField path="url" type="string" required>
+  Download URL for the Chromium source archive. Uses the `-lite` variant which excludes Git history to reduce download size.
+  
+  **Variable substitution**: `%(_chromium_version)s` is automatically replaced with the target Chromium version.
+</ParamField>
+
+<ParamField path="download_filename" type="string" required>
+  Filename to use when saving the downloaded archive locally.
+  
+  **Format**: `chromium-%(_chromium_version)s-lite.tar.xz`
+</ParamField>
+
+<ParamField path="output_path" type="string" required>
+  Relative path where the source code should be extracted. Use `./` for the source root directory.
+</ParamField>
+
+<ParamField path="strip_leading_dirs" type="string" required>
+  Top-level directory name to strip from the archive. The official Chromium archives contain a `chromium-VERSION` directory.
+  
+  **Example**: `chromium-%(_chromium_version)s`
+</ParamField>
+
+### Hash Verification
+
+<ParamField path="hash_url" type="string" required>
+  Special field for fetching and verifying the archive hash. Uses a pipe-delimited format:
+  
+  ```
+  identifier|filename|url
+  ```
+  
+  - **identifier**: Internal name (e.g., `chromium`)
+  - **filename**: Name of the hash file (e.g., `chromium-VERSION-lite.tar.xz.hashes`)
+  - **url**: Full URL to download the hash file
+</ParamField>
+
+## Automatic Variables
+
+Variables beginning with underscore are provided by the build system:
+
+<ParamField path="_chromium_version" type="string">
+  The target Chromium version being built. This is read from the build configuration and automatically substituted.
+  
+  **Example**: `133.0.6943.137`
+</ParamField>
+
+## Example Configuration
+
+<CodeGroup>
+```ini Current Configuration
+[chromium]
+url = https://commondatastorage.googleapis.com/chromium-browser-official/chromium-%(_chromium_version)s-lite.tar.xz
+download_filename = chromium-%(_chromium_version)s-lite.tar.xz
+hash_url = chromium|chromium-%(_chromium_version)s-lite.tar.xz.hashes|https://commondatastorage.googleapis.com/chromium-browser-official/chromium-%(_chromium_version)s-lite.tar.xz.hashes
+output_path = ./
+strip_leading_dirs = chromium-%(_chromium_version)s
+```
+
+```ini With Version Substitution
+# When _chromium_version = 133.0.6943.137
+[chromium]
+url = https://commondatastorage.googleapis.com/chromium-browser-official/chromium-133.0.6943.137-lite.tar.xz
+download_filename = chromium-133.0.6943.137-lite.tar.xz
+hash_url = chromium|chromium-133.0.6943.137-lite.tar.xz.hashes|https://commondatastorage.googleapis.com/chromium-browser-official/chromium-133.0.6943.137-lite.tar.xz.hashes
+output_path = ./
+strip_leading_dirs = chromium-133.0.6943.137
+```
+</CodeGroup>
+
+## Chromium Archive Variants
+
+Chromium provides two archive types:
+
+<CardGroup cols={2}>
+  <Card title="Standard" icon="archive">
+    **Format**: `chromium-VERSION.tar.xz`
+    
+    Includes full Git history and all development files. Much larger download (5-10 GB).
+  </Card>
+  
+  <Card title="Lite" icon="file-zipper">
+    **Format**: `chromium-VERSION-lite.tar.xz`
+    
+    Excludes Git history. Smaller and faster to download (2-3 GB). **Recommended for Helium builds.**
+  </Card>
+</CardGroup>
+
+<Note>
+  Helium uses the `-lite` variant to reduce build setup time and disk usage.
+</Note>
+
+## Hash Verification Process
+
+The build system performs the following steps:
+
+<Steps>
+  <Step title="Download hash file">
+    Fetches the `.hashes` file from the URL specified in `hash_url`.
+  </Step>
+  
+  <Step title="Download source archive">
+    Downloads the Chromium source from the `url` field.
+  </Step>
+  
+  <Step title="Compute local hash">
+    Calculates the SHA-256 hash of the downloaded archive.
+  </Step>
+  
+  <Step title="Compare hashes">
+    Verifies the computed hash matches one in the `.hashes` file. Aborts build if verification fails.
+  </Step>
+</Steps>
+
+<Warning>
+  Never skip hash verification. This ensures the downloaded source hasn't been tampered with.
+</Warning>
+
+## Download Source
+
+Chromium source archives are hosted on Google Cloud Storage:
+
+```
+https://commondatastorage.googleapis.com/chromium-browser-official/
+```
+
+This CDN contains:
+- Official release archives for all Chromium versions
+- Corresponding `.hashes` files for verification
+- Both standard and `-lite` variants
+
+## Updating Chromium Version
+
+To update to a new Chromium version:
+
+<Steps>
+  <Step title="Update version variable">
+    Modify the `_chromium_version` variable in your build configuration (typically in a separate version file or build script).
+  </Step>
+  
+  <Step title="Verify archive exists">
+    Check that the new version is available:
+    ```bash
+    curl -I https://commondatastorage.googleapis.com/chromium-browser-official/chromium-VERSION-lite.tar.xz
+    ```
+  </Step>
+  
+  <Step title="No changes needed">
+    The `downloads.ini` file uses automatic substitution, so no changes are needed here.
+  </Step>
+  
+  <Step title="Update patches">
+    Review and update patches in `patches/series` to ensure compatibility with the new Chromium version.
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Download fails with 404">
+    The specified Chromium version may not exist. Verify the version number and check the [Chromium release schedule](https://chromiumdash.appspot.com/releases).
+  </Accordion>
+  
+  <Accordion title="Hash verification fails">
+    The downloaded archive may be corrupted. Delete the cached download and try again. If the issue persists, the CDN may be serving a corrupted file.
+  </Accordion>
+  
+  <Accordion title="Extraction fails">
+    Ensure `strip_leading_dirs` matches the actual directory name in the archive. You can inspect the archive:
+    ```bash
+    tar -tf chromium-VERSION-lite.tar.xz | head
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Related Configuration
+
+- [deps.ini](/reference/deps-ini) - Additional dependencies downloaded after Chromium
+- [flags.gn](/reference/flags-gn) - Build configuration flags
+- [patches/series](/reference/patches-series) - Patches applied to Chromium source

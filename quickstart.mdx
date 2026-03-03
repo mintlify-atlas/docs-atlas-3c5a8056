@@ -1,80 +1,309 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: 'Quick Start Guide'
+description: 'Get up and running with Helium in minutes. From download to your first private browsing session.'
 ---
 
-## Get started in three steps
+## Welcome to Helium
 
-Get your documentation site running locally and make your first customization.
+This guide will walk you through installing Helium, completing the initial setup, and exploring key privacy features. Let's get started!
 
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+<Steps>
+  <Step title="Download Helium">
+    First, get Helium for your operating system:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    **Recommended:** Visit [helium.computer](https://helium.computer) for automatic platform detection
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+    **Direct Downloads:**
+    - [macOS](https://github.com/imputnet/helium-macos/releases/latest)
+    - [Linux](https://github.com/imputnet/helium-linux/releases/latest) (AppImage)
+    - [Windows](https://github.com/imputnet/helium-windows/releases/latest)
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    <Note>
+      Need detailed installation instructions? Check out the [Downloads page](/downloads) for platform-specific guides.
+    </Note>
+  </Step>
+  
+  <Step title="Install Helium">
+    Follow the installation process for your platform:
+    
+    <Tabs>
+      <Tab title="macOS">
+        1. Open the downloaded `.dmg` file
+        2. Drag Helium to your Applications folder
+        3. Right-click Helium and select "Open" (first launch only)
+        4. Click "Open" in the security dialog
+      </Tab>
+      <Tab title="Linux">
+        ```bash
+        # Make the AppImage executable
+        chmod +x Helium-*.AppImage
+        
+        # Run Helium
+        ./Helium-*.AppImage
+        ```
+      </Tab>
+      <Tab title="Windows">
+        1. Run the downloaded installer
+        2. Follow the installation wizard
+        3. Click "More info" → "Run anyway" if SmartScreen appears
+        4. Launch from Start Menu or desktop shortcut
+      </Tab>
+    </Tabs>
+  </Step>
+  
+  <Step title="Complete the Onboarding">
+    When you first launch Helium, you'll see the onboarding page at `helium://setup`.
+    
+    The onboarding will guide you through:
+    - Understanding Helium's privacy features
+    - Configuring your initial preferences
+    - Learning about built-in ad-blocking with uBlock Origin
+    
+    Take your time to read through the options and configure Helium to your preferences.
+    
+    <Tip>
+      You can always return to settings later by going to `helium://settings` or clicking the menu icon (⋮) → Settings.
+    </Tip>
+  </Step>
+  
+  <Step title="Start Browsing">
+    Congratulations! You're ready to browse the web with privacy by default.
+    
+    Key things to know:
+    - **No Google services:** Helium doesn't connect to Google servers
+    - **Built-in ad-blocking:** uBlock Origin is pre-installed and active
+    - **Privacy by default:** No telemetry, no tracking, no data collection
+  </Step>
+</Steps>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
-
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 3: Go live
-
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
-
-## Next steps
-
-Now that you have your docs running, explore these key features:
+## Understanding Helium's Privacy Features
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="No Google Services" icon="ban">
+    All Google services and tracking have been removed from the Chromium base. No background connections, no sync, no telemetry.
+  </Card>
+  
+  <Card title="uBlock Origin" icon="shield">
+    Powerful, efficient content blocker pre-installed. Block ads, trackers, and malware domains with customizable filter lists.
+  </Card>
+  
+  <Card title="No Telemetry" icon="eye-slash">
+    Helium never collects usage data, crash reports, or any information about your browsing. What you do stays on your device.
+  </Card>
+  
+  <Card title="Open Source" icon="code">
+    All code is public and auditable. You can verify exactly what Helium does (and doesn't do) by inspecting the source.
+  </Card>
 </CardGroup>
 
+## Essential Features
+
+### Configuring uBlock Origin
+
+uBlock Origin comes pre-installed with sensible defaults, but you can customize it to your needs:
+
+<Steps>
+  <Step title="Access uBlock Origin">
+    Click the uBlock Origin icon in the toolbar (shield icon).
+  </Step>
+  
+  <Step title="Open the Dashboard">
+    Click the gear icon to open the uBlock Origin dashboard.
+  </Step>
+  
+  <Step title="Customize Filter Lists">
+    Navigate to the "Filter lists" tab to enable or disable specific blocking lists. Recommended lists are enabled by default.
+  </Step>
+  
+  <Step title="Use Element Picker">
+    Use the element picker tool (eyedropper icon) to manually block annoying elements on any webpage.
+  </Step>
+</Steps>
+
+<Tip>
+  The default filter lists provide excellent protection. Only modify them if you have specific needs or encounter issues on certain websites.
+</Tip>
+
+### Keyboard Shortcuts
+
+Helium uses standard Chromium keyboard shortcuts:
+
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl/Cmd + T` | New tab |
+| `Ctrl/Cmd + W` | Close tab |
+| `Ctrl/Cmd + Shift + T` | Reopen closed tab |
+| `Ctrl/Cmd + L` | Focus address bar |
+| `Ctrl/Cmd + Shift + N` | New incognito window |
+| `Ctrl/Cmd + H` | View history |
+| `Ctrl/Cmd + Shift + Delete` | Clear browsing data |
+
+### Settings and Customization
+
+Access Helium's settings by typing `helium://settings` in the address bar or:
+
+1. Click the menu icon (⋮) in the top-right corner
+2. Select "Settings"
+
+Key settings to explore:
+- **Privacy and security:** Configure cookies, site permissions, and security features
+- **Appearance:** Customize theme, font size, and page zoom
+- **Search engine:** Set your preferred search engine (DuckDuckGo recommended for privacy)
+- **Extensions:** Manage installed extensions
+
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  Unlike Chrome, Helium doesn't have built-in sync. Your settings and data stay local to your device, protecting your privacy.
 </Note>
+
+## Importing Data from Another Browser
+
+You can import bookmarks, passwords, and history from your previous browser:
+
+<Steps>
+  <Step title="Open Settings">
+    Navigate to `helium://settings` or click menu (⋮) → Settings.
+  </Step>
+  
+  <Step title="Find Import Options">
+    Look for "Import bookmarks and settings" or a similar option in the settings menu.
+  </Step>
+  
+  <Step title="Select Source Browser">
+    Choose which browser to import from (Chrome, Firefox, Safari, Edge, etc.).
+  </Step>
+  
+  <Step title="Choose Data to Import">
+    Select what you want to import:
+    - Bookmarks
+    - Saved passwords
+    - Browsing history
+    - Autofill data
+  </Step>
+  
+  <Step title="Complete Import">
+    Click "Import" and wait for the process to complete.
+  </Step>
+</Steps>
+
+<Warning>
+  Be selective about what you import. If you're switching to Helium for privacy, consider starting fresh rather than importing tracking-laden history.
+</Warning>
+
+## Troubleshooting Common Issues
+
+<AccordionGroup>
+  <Accordion title="Helium won't open on macOS">
+    macOS may block unsigned applications. To fix:
+    
+    1. Go to System Settings → Privacy & Security
+    2. Scroll down to find the message about Helium
+    3. Click "Open Anyway"
+    
+    Alternatively, right-click Helium in Finder and select "Open".
+  </Accordion>
+  
+  <Accordion title="Website not loading correctly">
+    Some websites may break with aggressive content blocking:
+    
+    1. Click the uBlock Origin icon
+    2. Click the power button to disable blocking for this site
+    3. Reload the page
+    
+    If the issue persists, it may be a website compatibility issue. Report it on [GitHub Issues](https://github.com/imputnet/helium/issues).
+  </Accordion>
+  
+  <Accordion title="Missing features from Chrome">
+    Helium intentionally removes Google-specific features:
+    
+    - **No sync:** Use a password manager like Bitwarden instead
+    - **No Google account integration:** This is by design for privacy
+    - **No Google services:** Services like Translate are removed
+    
+    These removals are intentional privacy improvements, not bugs.
+  </Accordion>
+  
+  <Accordion title="Extensions from Chrome Web Store">
+    Helium can install extensions from the Chrome Web Store, but you may need to:
+    
+    1. Enable "Developer mode" in `helium://extensions`
+    2. Manually download and install CRX files for some extensions
+    
+    uBlock Origin comes pre-installed, so you don't need to add it manually.
+  </Accordion>
+</AccordionGroup>
+
+## What's Different from Chrome?
+
+Helium is based on Chromium but with significant privacy improvements:
+
+<Tabs>
+  <Tab title="Removed">
+    - All Google API dependencies
+    - Google account sync
+    - Crash reporting and telemetry
+    - Safe Browsing (replaced with local solutions)
+    - Google Translate integration
+    - Chrome Web Store integration
+    - Background Google connections
+  </Tab>
+  
+  <Tab title="Added">
+    - uBlock Origin pre-installed
+    - Enhanced privacy defaults
+    - Removed tracking and fingerprinting
+    - Privacy-focused onboarding
+    - No bloatware or promotional content
+  </Tab>
+  
+  <Tab title="Same">
+    - Chromium rendering engine
+    - Web standards support
+    - Developer tools
+    - Extension API (mostly compatible)
+    - Performance and speed
+  </Tab>
+</Tabs>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Explore Settings" icon="gear">
+    Dive deeper into Helium's settings at `helium://settings` to customize your experience.
+  </Card>
+  
+  <Card title="Install Extensions" icon="puzzle-piece">
+    Visit `helium://extensions` to manage extensions. Consider privacy-focused extensions like:
+    - Privacy Badger
+    - HTTPS Everywhere
+    - Bitwarden (password manager)
+  </Card>
+  
+  <Card title="Report Issues" icon="bug" href="https://github.com/imputnet/helium/issues">
+    Found a bug? Report it on GitHub to help improve Helium.
+  </Card>
+  
+  <Card title="Contribute" icon="code-branch" href="https://github.com/imputnet/helium">
+    Helium is open source. Contribute code, documentation, or ideas!
+  </Card>
+</CardGroup>
+
+## Getting Help
+
+If you need assistance:
+
+1. **Check GitHub Issues:** [github.com/imputnet/helium/issues](https://github.com/imputnet/helium/issues)
+2. **Review Documentation:** Re-read this guide and the [Downloads page](/downloads)
+3. **Open a New Issue:** If your problem is new, create a detailed bug report
+
+<Note>
+  Remember: Helium is in beta. Your feedback and bug reports are invaluable for improving the browser.
+</Note>
+
+## Stay Updated
+
+- **macOS & Linux:** Automatic updates are enabled by default
+- **Windows:** Check the [Windows releases page](https://github.com/imputnet/helium-windows/releases) periodically (auto-updates coming soon)
+
+<Card title="Back to Introduction" icon="home" href="/introduction">
+  Return to the main documentation page
+</Card>

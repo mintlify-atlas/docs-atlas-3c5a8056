@@ -1,0 +1,148 @@
+---
+title: Platform-Specific Repositories
+description: Access source code and releases for all supported platforms
+---
+
+Helium is available on all major desktop platforms. Each platform has its own dedicated repository containing platform-specific code, packaging, and release builds.
+
+<Note>
+All platform repositories are fully open source and available on GitHub under the imputnet organization.
+</Note>
+
+## Supported Platforms
+
+<CardGroup cols={3}>
+  <Card
+    title="macOS"
+    icon="apple"
+    href="https://github.com/imputnet/helium-macos"
+  >
+    Native builds for macOS with full integration
+  </Card>
+
+  <Card
+    title="Linux"
+    icon="linux"
+    href="https://github.com/imputnet/helium-linux"
+  >
+    AppImage builds for broad Linux compatibility
+  </Card>
+
+  <Card
+    title="Windows"
+    icon="windows"
+    href="https://github.com/imputnet/helium-windows"
+  >
+    Native Windows builds (auto-updates coming soon)
+  </Card>
+</CardGroup>
+
+## Helium for macOS
+
+<Accordion title="Repository & Releases">
+  **Repository:** [github.com/imputnet/helium-macos](https://github.com/imputnet/helium-macos)
+  
+  **Latest Release:** [View releases](https://github.com/imputnet/helium-macos/releases/latest)
+  
+  Contains macOS-specific:
+  - Native app bundling and packaging
+  - macOS system integration
+  - Platform-specific features and optimizations
+  - Code signing and notarization workflows
+</Accordion>
+
+### Features
+
+- Full native macOS experience
+- Integration with system preferences
+- Apple Silicon and Intel support
+- Automatic updates
+
+## Helium for Linux
+
+<Accordion title="Repository & Releases">
+  **Repository:** [github.com/imputnet/helium-linux](https://github.com/imputnet/helium-linux)
+  
+  **Latest Release:** [View releases](https://github.com/imputnet/helium-linux/releases/latest)
+  
+  Contains Linux-specific:
+  - AppImage packaging for universal compatibility
+  - Desktop integration files
+  - Distribution-agnostic builds
+  - System library handling
+</Accordion>
+
+### Features
+
+- AppImage format for easy distribution
+- Works across all major Linux distributions
+- No installation required - just download and run
+- Desktop environment integration
+
+## Helium for Windows
+
+<Accordion title="Repository & Releases">
+  **Repository:** [github.com/imputnet/helium-windows](https://github.com/imputnet/helium-windows)
+  
+  **Latest Release:** [View releases](https://github.com/imputnet/helium-windows/releases/latest)
+  
+  Contains Windows-specific:
+  - Windows installer and portable builds
+  - System integration and shell extensions
+  - Windows-specific feature implementations
+  - Build toolchain and scripts
+</Accordion>
+
+### Features
+
+- Native Windows experience
+- Standard installer and portable options
+- Windows 10 and 11 support
+- Auto-updates coming soon
+
+<Warning>
+Windows builds do not yet have automatic updates enabled. Check the releases page periodically for new versions.
+</Warning>
+
+## Download Options
+
+### Quick Download (Recommended)
+
+Visit [helium.computer](https://helium.computer/) on your computer, and the website will automatically detect your OS and architecture to provide the correct download.
+
+### Manual Download
+
+If you prefer to browse all available builds or need a specific version:
+
+1. Visit the GitHub Releases section for your platform:
+   - [macOS Releases](https://github.com/imputnet/helium-macos/releases/latest)
+   - [Linux Releases](https://github.com/imputnet/helium-linux/releases/latest)
+   - [Windows Releases](https://github.com/imputnet/helium-windows/releases/latest)
+
+2. Download the appropriate build for your system
+3. Follow the installation instructions provided in each repository
+
+## Source Code Access
+
+<Info>
+All platform repositories contain the complete source code needed to build Helium from scratch. Build instructions are provided in each repository's README.
+</Info>
+
+The main Helium repository contains the core browser code, while platform repositories contain:
+- Platform-specific patches and modifications
+- Build scripts and toolchain configurations
+- Packaging and distribution files
+- Platform integration code
+
+## Contributing
+
+Contributions are welcome for all platforms. Each repository has its own contribution guidelines:
+
+- Report platform-specific issues in the appropriate repository
+- Submit pull requests for platform-specific improvements
+- Help test pre-release builds
+- Contribute to documentation
+
+<Tip>
+Before contributing platform-specific code, check the main [Helium repository](https://github.com/imputnet/helium) to see if the issue or feature is cross-platform.
+</Tip>

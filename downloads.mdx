@@ -1,0 +1,180 @@
+---
+title: 'Download Helium'
+description: 'Get Helium for macOS, Linux, or Windows. Available for all major desktop platforms with full source code.'
+---
+
+## Getting Helium
+
+<Warning>
+  Helium is currently in beta. Unexpected issues may occur. We are not responsible for any damage caused by usage of beta software. Please report any bugs you encounter on [GitHub Issues](https://github.com/imputnet/helium/issues).
+</Warning>
+
+### Automatic Detection
+
+The easiest way to download Helium is to visit [helium.computer](https://helium.computer/) on your computer. The website will automatically detect your operating system and architecture, providing the correct build for your system.
+
+<Card title="Recommended: helium.computer" icon="globe" href="https://helium.computer">
+  Visit the official website for automatic platform detection and download
+</Card>
+
+## Platform-Specific Downloads
+
+If you prefer to download builds directly or want to access all available versions, you can get them "straight from the tap" on GitHub:
+
+<CardGroup cols={3}>
+  <Card
+    title="macOS"
+    icon="apple"
+    href="https://github.com/imputnet/helium-macos/releases/latest"
+  >
+    Universal binary supporting Intel and Apple Silicon
+  </Card>
+  <Card
+    title="Linux"
+    icon="linux"
+    href="https://github.com/imputnet/helium-linux/releases/latest"
+  >
+    AppImage format for broad compatibility
+  </Card>
+  <Card
+    title="Windows"
+    icon="windows"
+    href="https://github.com/imputnet/helium-windows/releases/latest"
+  >
+    Windows installer (auto-updates coming soon)
+  </Card>
+</CardGroup>
+
+## Installation Instructions
+
+<Tabs>
+  <Tab title="macOS">
+    <Steps>
+      <Step title="Download">
+        Visit the [macOS releases page](https://github.com/imputnet/helium-macos/releases/latest) and download the latest `.dmg` file.
+      </Step>
+      <Step title="Install">
+        1. Open the downloaded `.dmg` file
+        2. Drag Helium to your Applications folder
+        3. Launch Helium from Applications or Spotlight
+      </Step>
+      <Step title="First Launch">
+        On first launch, macOS may show a security warning. To open Helium:
+        1. Go to System Settings > Privacy & Security
+        2. Scroll down to find the message about Helium
+        3. Click "Open Anyway"
+        
+        Alternatively, right-click Helium in Finder and select "Open".
+      </Step>
+    </Steps>
+    
+    <Note>
+      Helium for macOS is a universal binary that runs natively on both Intel and Apple Silicon Macs.
+    </Note>
+  </Tab>
+  
+  <Tab title="Linux">
+    <Steps>
+      <Step title="Download">
+        Visit the [Linux releases page](https://github.com/imputnet/helium-linux/releases/latest) and download the latest `.AppImage` file.
+      </Step>
+      <Step title="Make Executable">
+        Open a terminal in your downloads folder and run:
+        ```bash
+        chmod +x Helium-*.AppImage
+        ```
+      </Step>
+      <Step title="Run">
+        Double-click the AppImage file or run it from the terminal:
+        ```bash
+        ./Helium-*.AppImage
+        ```
+      </Step>
+      <Step title="Optional: Install AppImageLauncher">
+        For better desktop integration, consider installing [AppImageLauncher](https://github.com/TheAssassin/AppImageLauncher). It will automatically integrate AppImages into your application menu.
+      </Step>
+    </Steps>
+    
+    <Note>
+      AppImage format provides excellent compatibility across different Linux distributions without requiring installation or root privileges.
+    </Note>
+  </Tab>
+  
+  <Tab title="Windows">
+    <Steps>
+      <Step title="Download">
+        Visit the [Windows releases page](https://github.com/imputnet/helium-windows/releases/latest) and download the latest installer.
+      </Step>
+      <Step title="Install">
+        1. Run the downloaded installer
+        2. Follow the installation wizard
+        3. Launch Helium from the Start Menu or desktop shortcut
+      </Step>
+      <Step title="Windows Security">
+        Windows may show a SmartScreen warning. Click "More info" and then "Run anyway" to proceed with installation.
+      </Step>
+    </Steps>
+    
+    <Warning>
+      Auto-updates are not yet available for Windows builds. Check the releases page periodically for new versions.
+    </Warning>
+  </Tab>
+</Tabs>
+
+## Version Information
+
+Helium is currently built on:
+- **Chromium version:** 145.0.7632.116
+- **Helium version:** 0 (Beta)
+
+## Platform Repositories
+
+All platform packaging is fully open source. You can view the source code, build instructions, and contribute to platform-specific features:
+
+<CardGroup cols={3}>
+  <Card title="macOS Source" icon="github" href="https://github.com/imputnet/helium-macos">
+    View macOS packaging source
+  </Card>
+  <Card title="Linux Source" icon="github" href="https://github.com/imputnet/helium-linux">
+    View Linux packaging source
+  </Card>
+  <Card title="Windows Source" icon="github" href="https://github.com/imputnet/helium-windows">
+    View Windows packaging source
+  </Card>
+</CardGroup>
+
+## Related Projects
+
+Helium is part of a larger ecosystem of privacy-focused projects:
+
+<AccordionGroup>
+  <Accordion title="Helium Services">
+    Backend services that power Helium features.
+    
+    [View on GitHub](https://github.com/imputnet/helium-services)
+  </Accordion>
+  
+  <Accordion title="Helium Onboarding">
+    The onboarding experience you see at `helium://setup` when you first launch the browser.
+    
+    [View on GitHub](https://github.com/imputnet/helium-onboarding)
+  </Accordion>
+  
+  <Accordion title="uBlock Origin Packaging">
+    Custom packaging of uBlock Origin extension for Helium.
+    
+    [View on GitHub](https://github.com/imputnet/ublock-origin-crx)
+  </Accordion>
+</AccordionGroup>
+
+## Need Help?
+
+If you encounter any issues during installation:
+
+1. Check the [GitHub Issues](https://github.com/imputnet/helium/issues) for known problems
+2. Review the [Quick Start Guide](/quickstart) for troubleshooting tips
+3. Open a new issue if your problem hasn't been reported
+
+<Card title="Next: Quick Start" icon="rocket" href="/quickstart">
+  Learn how to set up and use Helium
+</Card>

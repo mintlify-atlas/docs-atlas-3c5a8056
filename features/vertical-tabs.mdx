@@ -1,0 +1,525 @@
+---
+title: Vertical Tabs
+description: Use vertical tabs for better organization with customizable width, collapsible sidebar, and smooth animations
+---
+
+Helium includes full support for vertical tabs, allowing you to display tabs in a sidebar on the left or right side of your browser window instead of the traditional horizontal strip.
+
+## Why Vertical Tabs?
+
+Vertical tabs offer several advantages for modern browsing:
+
+<CardGroup cols={2}>
+  <Card title="Better Tab Visibility" icon="eye">
+    See full page titles instead of truncated text
+  </Card>
+  
+  <Card title="More Screen Space" icon="expand">
+    Wider pages fit better on widescreen monitors
+  </Card>
+  
+  <Card title="Unlimited Tabs" icon="infinity">
+    Scroll vertically instead of cramming tabs horizontally
+  </Card>
+  
+  <Card title="Natural Grouping" icon="layer-group">
+    Tab groups work better in a vertical layout
+  </Card>
+</CardGroup>
+
+## Enabling Vertical Tabs
+
+Vertical tabs are currently an experimental feature in Chromium:
+
+1. Navigate to `chrome://flags`
+2. Search for "vertical tabs"
+3. Enable the vertical tabs flag
+4. Restart the browser
+
+<Note>
+Helium includes numerous improvements to Chromium's vertical tab implementation, making it more stable and polished.
+</Note>
+
+## Layout Customization
+
+### Tab Strip Width
+
+Helium fine-tunes the vertical tab strip dimensions:
+
+```cpp
+// From patches/helium/ui/layout/vertical.patch
+
+// Collapsed width: 38px (very compact)
+static constexpr int kCollapsedWidth = 38;
+
+// Uncollapsed minimum: 160px
+static constexpr int kUncollapsedMinWidth = 160;
+
+// Uncollapsed maximum: 400px
+static constexpr int kUncollapsedMaxWidth = 400;
+
+// Default width: 200px (optimal for most screens)
+inline constexpr int kVerticalTabStripDefaultUncollapsedWidth = 200;
+```
+
+**Comparison to Chromium defaults:**
+- Collapsed: 38px vs 48px (10px narrower)
+- Default: 200px vs 240px (40px narrower)
+- Better screen space utilization
+
+### Resizing Behavior
+
+You can resize the vertical tab strip by dragging the edge:
+
+```cpp
+void VerticalTabStripRegionView::OnResize(int resize_amount, bool done_resizing) {
+  const int resize_delta = state_controller_->IsTabStripRightAligned()
+                              ? -resize_amount
+                              : resize_amount;
+  const int proposed_width = starting_width_on_resize_.value() + resize_delta;
+}
+```
+
+**Snap-to-default feature:**
+
+```cpp
+// Snap to default width if within 6px
+const int default_uncollapsed_width =
+    tabs::kVerticalTabStripDefaultUncollapsedWidth;  // 200px
+const int min_snap_width = default_uncollapsed_width - kDefaultWidthSnapDistance;  // 194px
+const int max_snap_width = default_uncollapsed_width + kDefaultWidthSnapDistance;  // 206px
+
+if (new_state.uncollapsed_width >= min_snap_width &&
+    new_state.uncollapsed_width <= max_snap_width) {
+  new_state.uncollapsed_width = default_uncollapsed_width;  // Snap to 200px!
+}
+```
+
+This helps you quickly return to the optimal width.
+
+### Padding Refinements
+
+Helium reduces padding for better information density:
+
+```cpp
+case LayoutConstant::kVerticalTabMinWidth:
+-  return 32;
++  return 30;  // 2px narrower
+
+case LayoutConstant::kVerticalTabStripUncollapsedPadding:
+-  return 12;
++  return 6;  // Half the padding
+
+case LayoutConstant::kVerticalTabStripCollapsedPadding:
+-  return 8;
++  return 4;  // Half the padding
+```
+
+**Result:** More tabs visible without sacrificing usability.
+
+## Collapse/Expand Animation
+
+Helium speeds up the collapse animation:
+
+```cpp
+resize_animation_.SetSlideDuration(
+-  gfx::Animation::RichAnimationDuration(base::Milliseconds(450)));
++  gfx::Animation::RichAnimationDuration(base::Milliseconds(250)));
+```
+
+**Effect:** Collapsing and expanding feels more responsive (250ms vs 450ms).
+
+### Animation Curve
+
+```cpp
+resize_animation_.SetTweenType(gfx::Tween::Type::EASE_IN_OUT_EMPHASIZED);
+```
+
+The "emphasized" easing provides smooth acceleration and deceleration.
+
+## Tab Strip Positioning
+
+Vertical tabs can be on the **left** or **right** side:
+
+```cpp
+const int vertical_tab_strip_x =
+    vertical_right_aligned
+        ? params.visual_client_area.right() - vertical_tab_strip_width
+        : params.visual_client_area.x();
+```
+
+<Tip>
+Right-aligned tabs work better with left-to-right languages. The position is user-configurable through vertical tab settings.
+</Tip>
+
+## Individual Tab Design
+
+### Tab Height
+
+Vertical tabs are compact:
+
+```cpp
+case LayoutConstant::kVerticalTabHeight:
+  return 30;  // 30px tall
+```
+
+This allows more tabs to fit on screen while remaining easy to click.
+
+### Icon and Title Layout
+
+Helium adjusts the internal layout of vertical tabs:
+
+```cpp
+std::vector<TabChildConfig>{
+    TabChildConfig(close_button_, kIconDesignWidth, kDefaultPadding,
+                   /*align_leading=*/false, /*expand=*/false),
+    TabChildConfig(icon_, kIconDesignWidth, kHorizontalInset,
+                   /*align_leading=*/true, /*expand=*/false),
+    TabChildConfig(alert_indicator_, kIconDesignWidth, kDefaultPadding,
+                   /*align_leading=*/true, /*expand=*/false),
+    TabChildConfig(title_, kTitleMinWidth, kDefaultPadding,
+                   /*align_leading=*/true, /*expand=*/true)
+};
+```
+
+**Order:**
+1. Icon (left)
+2. Alert indicator (if playing audio/etc.)
+3. Title (expands to fill space)
+4. Close button (right, on hover)
+
+### Close Button Behavior
+
+Close buttons appear intelligently:
+
+```cpp
+void VerticalTabView::UpdateCloseButtonVisibility() {
+  // Show close button only when:
+  // 1) The tab is wide enough and active OR hovered, or
+  // 2) The tab is small and active AND hovered.
+  
+  const bool title_visible = title_->GetVisible() && title_->width() > 0;
+  const bool show_close_button = !pinned_ &&
+      (title_visible ? (active_ || hovered_) : (active_ && hovered_));
+  close_button_->SetVisible(show_close_button);
+}
+```
+
+**Logic:**
+- **Wide tabs:** Show on hover or when active
+- **Collapsed tabs:** Show only when both active AND hovered
+- **Pinned tabs:** Never show (pinned tabs are permanent)
+
+### Alert Indicator
+
+When a tab plays audio or has other alerts:
+
+```cpp
+const bool should_hide_icon_for_alert = pinned_ || is_collapsed;
+icon_->SetVisible(!alert_indicator_visible || !should_hide_icon_for_alert);
+```
+
+- **Collapsed tabs:** Alert indicator replaces favicon
+- **Expanded tabs:** Both favicon and indicator visible
+- **Pinned tabs:** Alert indicator replaces favicon
+
+## Top Container
+
+The top of the vertical tab strip contains control buttons:
+
+```cpp
+// Buttons in collapsed mode: vertical stack
+// Buttons in expanded mode: horizontal row
+```
+
+### Collapse/Expand Button
+
+```cpp
+collapse_button_ = AddChildButtonFor(kActionToggleCollapseVertical);
+collapse_button_->SetProperty(views::kElementIdentifierKey,
+                              kVerticalTabStripCollapseButtonElementId);
+```
+
+Click to collapse the tab strip to 38px width, showing only favicons.
+
+### Button Sizing
+
+Buttons adapt based on collapse state:
+
+```cpp
+// Collapsed: square buttons stacked vertically
+const int button_size = pref_size.height();
+gfx::Rect bounds((host_size.width() - button_size) / 2, current_y,
+                 button_size, button_size);
+
+// Expanded: buttons in horizontal row
+const int button_size = pref_size.height();
+gfx::Rect bounds(
+    is_right_aligned ? current_x - button_size : current_x,
+    host_size.height() - (kContainerHeight + button_size) / 2,
+    button_size, button_size);
+```
+
+**Spacing:**
+- Collapsed: 2px between buttons
+- Expanded: 3px between buttons
+
+## Bottom Container
+
+The bottom container holds the New Tab button:
+
+```cpp
+new_tab_button_ = AddChildButtonFor(kActionNewTab, IDS_ACCNAME_NEWTAB);
+new_tab_button_->SetProperty(views::kElementIdentifierKey,
+                             kNewTabButtonElementId);
+```
+
+### Simplified Design
+
+Helium removes the tab groups button for a cleaner interface:
+
+```diff
+- tab_group_button_ = AddChildButtonFor(kActionTabGroupsMenu);
+- new_tab_button_ = AddChildButtonFor(kActionNewTab);
++ new_tab_button_ = AddChildButtonFor(kActionNewTab);  // Only new tab button
+```
+
+The new tab button now takes the full width, making it easier to click.
+
+### Styling
+
+```cpp
+new_tab_button_->SetText(l10n_util::GetStringUTF16(string_id));
+new_tab_button_->SetEnabledTextColors(kColorToolbarButtonIconDisabled);
+new_tab_button_->SetBorder(views::CreateEmptyBorder(
+    gfx::Insets::VH(kBasePadding, kBasePadding * 2)));
+new_tab_button_->SetImageLabelSpacing(kBasePadding * 2);
+new_tab_button_->SetHorizontalAlignment(gfx::HorizontalAlignment::ALIGN_LEFT);
+```
+
+**Visual result:** A clear, left-aligned button with icon and text.
+
+## Window Frame Integration
+
+### Caption Buttons
+
+When vertical tabs are collapsed, they fit under the window caption buttons:
+
+```cpp
+const int collapsed_vertical_tab_strip_adjustment = GetCollapsedVerticalTabStripTopAdjustment(params);
+
+if (collapsed_vertical_tab_strip_adjustment > 0) {
+  if (vertical_right_aligned) {
+    top_container_layout.bounds.Outset(gfx::Outsets::TLBR(
+        0, 0, 0, collapsed_vertical_tab_strip_adjustment));
+  } else {
+    top_container_layout.bounds.Outset(gfx::Outsets::TLBR(
+        0, collapsed_vertical_tab_strip_adjustment, 0, 0));
+  }
+}
+```
+
+This maximizes vertical space utilization.
+
+### Corner Rounding
+
+The leading corner is rounded to match the window frame:
+
+```cpp
+const int corner_radius =
+    show_corner_fill
+        ? GetLayoutConstant(LayoutConstant::kVerticalTabCornerRadius)
+        : 0;
+leading_corner_fill_view_->SetCornerRadius(corner_radius);
+```
+
+A special overlay view fills the corner with the frame color for a seamless appearance.
+
+## Scroll Behavior
+
+Vertical tabs scroll naturally:
+
+```cpp
+// patches/upstream-fixes/vertical/r1576368-add-scrollview-api.patch
+// Adds scroll view API for smooth scrolling
+
+// patches/upstream-fixes/vertical/r1576442-scroll-to-activated-tabs.patch
+// Auto-scrolls to show activated tabs
+```
+
+When you activate a tab outside the visible area, the tab strip automatically scrolls to show it.
+
+## Tab Dragging
+
+Helium includes numerous upstream fixes for dragging vertical tabs:
+
+```
+r1571978-support-dragging-multiple-vertical-tabs.patch
+r1572660-correctly-position-dragged-split-views.patch
+r1574955-handle-dragging-pinned-vertical-tabs.patch
+r1579572-support-dragging-fully-selected-tab-groups.patch
+```
+
+**Supported drag operations:**
+- Drag individual tabs to reorder
+- Drag multiple selected tabs together
+- Drag tab groups as a unit
+- Drag pinned tabs within the pinned area
+- Drag tabs between windows
+
+## Pinned Tabs
+
+Pinned tabs appear at the top of the vertical strip:
+
+```cpp
+// Pinned tabs are laid out contiguously
+// patches/upstream-fixes/vertical/r1577564-layout-pinned-tabs-contiguously-with-dragged-placeholder.patch
+```
+
+They remain visible even when scrolling the tab list.
+
+## Tab Groups
+
+Tab groups work seamlessly in vertical tabs:
+
+```cpp
+// patches/upstream-fixes/vertical/r1577348-support-dragging-tabgroup-headers.patch
+// Enables dragging tab group headers to reorder groups
+```
+
+**Features:**
+- Group headers are collapsible
+- Drag groups to reorder
+- Expand/collapse groups to manage clutter
+
+## Performance Optimizations
+
+### Lazy Loading
+
+```cpp
+// patches/upstream-fixes/vertical/r1573324-lazily-load-tabstrips-when-switching-modes.patch
+// Only renders visible tab strip (horizontal OR vertical, not both)
+```
+
+Switching between horizontal and vertical doesn't keep both in memory.
+
+### Custom Scrollbars
+
+```cpp
+// patches/upstream-fixes/vertical/r1578138-custom-scrollbars.patch
+// Themed scrollbars that match the browser UI
+```
+
+Scrollbars blend naturally with the vertical tab strip.
+
+## Accessibility
+
+### Keyboard Navigation
+
+Vertical tabs support full keyboard navigation:
+- `Ctrl+Tab` / `Ctrl+Shift+Tab` - Navigate tabs
+- `Ctrl+W` - Close current tab
+- `Ctrl+T` - New tab (focuses new tab button)
+- Arrow keys - Navigate when focused on tab list
+
+### Screen Readers
+
+```cpp
+// Proper ARIA labels for all interactive elements
+new_tab_button_->SetText(l10n_util::GetStringUTF16(IDS_ACCNAME_NEWTAB));
+collapse_button_->SetProperty(views::kElementIdentifierKey,
+                              kVerticalTabStripCollapseButtonElementId);
+```
+
+Screen readers announce:
+- Tab titles and counts
+- Active tab
+- Group names
+- Button functions
+
+## Known Issues
+
+<Warning>
+Vertical tabs in Chromium are still experimental. Helium includes many fixes, but some edge cases remain.
+</Warning>
+
+### Fixed in Helium
+
+These issues are fixed by Helium's patches:
+- ✅ Crash when dragging from inactive tab strip (`r1573883`)
+- ✅ Dragged tabs not positioned correctly (`r1572660`)
+- ✅ Split view issues with vertical tabs (`r1579774`)
+- ✅ Context menu positioning problems (`r1572056`)
+- ✅ Tab group drag crashes (`r1568708`)
+- ✅ Incorrect Z-order for tabs (`r1572266`)
+
+### Remaining Limitations
+
+- Tab preview on hover (not yet implemented)
+- Vertical tab search (Chromium feature, not yet stabilized)
+- Custom tab strip themes (limited by Chromium API)
+
+## Comparison: Helium vs Other Browsers
+
+| Feature | Helium | Edge | Arc | Vivaldi |
+|---------|--------|------|-----|----------|
+| Vertical Tabs | Yes | Yes | Yes | Yes |
+| Collapsible | Yes | Yes | Yes | Yes |
+| Resizable Width | Yes | Limited | Yes | Yes |
+| Right-Side Position | Yes | No | Yes | Yes |
+| Tab Groups | Yes | Yes | Limited | Yes |
+| Custom Styling | Limited | No | Yes | Yes |
+| Performance | Excellent | Good | Good | Moderate |
+
+## Tips & Tricks
+
+<AccordionGroup>
+  <Accordion title="Maximizing Vertical Space">
+    1. Collapse the tab strip (click collapse button)
+    2. Use tab groups to organize
+    3. Pin frequently-used tabs
+    4. Close tabs you're not actively using
+  </Accordion>
+  
+  <Accordion title="Efficient Multi-Tasking">
+    1. Use tab groups for different projects
+    2. Collapse unused groups
+    3. Drag groups to reorder by priority
+    4. Keep active project's group expanded
+  </Accordion>
+  
+  <Accordion title="Keyboard-First Workflow">
+    1. Learn keyboard shortcuts (`Ctrl+Tab`, `Ctrl+W`, etc.)
+    2. Use search (Ctrl+Shift+A) to find tabs
+    3. Navigate groups with arrow keys
+    4. Close tabs quickly with `Ctrl+W`
+  </Accordion>
+</AccordionGroup>
+
+## Source Code Reference
+
+Key files for vertical tab implementation:
+
+- `patches/helium/ui/layout/vertical.patch` - Main layout customizations
+- `patches/upstream-fixes/vertical/*.patch` - 40+ upstream bug fixes
+- `chrome/browser/ui/views/frame/vertical_tab_strip_region_view.cc` - Main view
+- `chrome/browser/ui/views/tabs/vertical/vertical_tab_view.cc` - Individual tab rendering
+- `chrome/browser/ui/tabs/vertical_tab_strip_state_controller.h` - State management
+
+<Tip>
+Helium includes over 40 patches in `patches/upstream-fixes/vertical/` that fix bugs and improve vertical tab stability.
+</Tip>
+
+## Future Improvements
+
+Potential future enhancements:
+
+- **Tab Preview:** Hover to see page preview
+- **Tab Search:** Fuzzy search within vertical tabs
+- **Custom Themes:** More styling options for the tab strip
+- **Gestures:** Swipe to switch tabs
+- **Multiple Strips:** Side-by-side vertical tab strips for split view
+
+## Conclusion
+
+Helium's vertical tab implementation combines Chromium's experimental feature with dozens of stability fixes and UI refinements, creating a robust vertical tab experience that rivals dedicated vertical tab browsers.

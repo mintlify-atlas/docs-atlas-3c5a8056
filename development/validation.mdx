@@ -1,0 +1,602 @@
+---
+title: Validation and Testing Tools
+description: Testing utilities and validation tools for ensuring Helium build integrity
+---
+
+This page documents the validation and testing tools used to ensure the integrity of Helium's build system and configuration.
+
+## Overview
+
+Helium includes comprehensive validation tools to catch issues early in the development process. These tools verify patch compatibility, configuration correctness, and build consistency.
+
+## Automated Validation
+
+### validate_patches.py - Complete Patch Validation
+
+The most comprehensive validation tool, checking that all patches apply cleanly to the Chromium source tree.
+
+<Steps>
+  <Step title="Load patches">
+    Reads all patches from the series file and parses them as unified diffs
+  </Step>
+  <Step title="Resolve dependencies">
+    Parses Chromium's DEPS file to understand the repository structure and dependency versions
+  </Step>
+  <Step title="Retrieve source files">
+    Downloads required files from Google's repositories or reads from local source tree
+  </Step>
+  <Step title="Apply patches">
+    Applies each patch to an in-memory representation of the source tree
+  </Step>
+  <Step title="Report results">
+    Logs any patches that fail to apply cleanly or have validation errors
+  </Step>
+</Steps>
+
+<CodeGroup>
+```bash Remote validation (CI)
+python3 devutils/validate_patches.py \
+  --remote \
+  --verbose
+```
+
+```bash Local validation (fast)
+python3 devutils/validate_patches.py \
+  --local /path/to/chromium/src
+```
+
+```bash Debug mode with cache
+python3 devutils/validate_patches.py \
+  --cache-remote /tmp/chromium_files \
+  --verbose
+```
+</CodeGroup>
+
+<Info>
+**When to use which mode:**
+- **Remote**: CI pipelines, automated testing, clean validation
+- **Local**: Fast development iteration when you have source tree
+- **Cache**: Debugging patch issues, inspecting source files
+</Info>
+
+### validate_config.py - Configuration Integrity
+
+All-in-one validation for Helium's configuration files.
+
+<Tabs>
+  <Tab title="What it validates">
+    <Check>All patches exist at specified paths</Check>
+    <Check>All patches are referenced in series file</Check>
+    <Check>No duplicate patches in series</Check>
+    <Check>Each patch is parseable as unified diff</Check>
+    <Check>GN flags are alphabetically sorted</Check>
+    <Check>No duplicate GN flag definitions</Check>
+    <Check>downloads.ini conforms to schema</Check>
+    <Check>Download URLs and hashes are valid</Check>
+  </Tab>
+  
+  <Tab title="Usage">
+    ```bash
+    # Run from repository root
+    python3 devutils/validate_config.py
+    
+    # Returns 0 on success, 1 on any warnings/errors
+    echo $?
+    ```
+  </Tab>
+  
+  <Tab title="CI Integration">
+    ```yaml
+    # .github/workflows/validate.yml
+    - name: Validate configuration
+      run: python3 devutils/validate_config.py
+      
+    - name: Validate patches
+      run: |
+        python3 devutils/validate_patches.py \
+          --remote \
+          --verbose
+    ```
+  </Tab>
+</Tabs>
+
+## Individual Validators
+
+### Patch File Validation
+
+<CodeGroup>
+```bash check_patch_files.py
+# Validates patch file structure and series
+python3 devutils/check_patch_files.py
+```
+
+```bash Custom directory
+python3 devutils/check_patch_files.py \
+  --patches /path/to/patches
+```
+</CodeGroup>
+
+<Accordion title="Validation checks performed">
+1. **Readability**: All patches can be opened and read
+2. **Parseability**: Each patch is valid unified diff format
+3. **Completeness**: All referenced patches exist on disk
+4. **Coverage**: No unused patches in directory
+5. **Uniqueness**: No duplicate patch references
+</Accordion>
+
+### GN Flags Validation
+
+<CodeGroup>
+```bash check_gn_flags.py
+# Validates GN build flags
+python3 devutils/check_gn_flags.py
+```
+
+```bash Custom flags file
+python3 devutils/check_gn_flags.py \
+  --flags-gn custom_flags.gn
+```
+</CodeGroup>
+
+**Common issues caught:**
+- Unsorted flags (affects diff readability)
+- Duplicate flag definitions (causes build errors)
+- Malformed flag syntax
+
+<Warning>
+GN flags must be sorted alphabetically. This ensures consistent diffs and makes it easier to track changes across versions.
+</Warning>
+
+### Downloads Configuration
+
+<CodeGroup>
+```bash check_downloads_ini.py  
+# Validates download configurations
+python3 devutils/check_downloads_ini.py
+```
+
+```bash Multiple files
+python3 devutils/check_downloads_ini.py \
+  --downloads-ini \
+    downloads.ini \
+    platform_downloads.ini
+```
+</CodeGroup>
+
+<Accordion title="Schema validation">
+Verifies:
+- Required fields present (url, download_filename, output_path)
+- Hash specifications valid (md5, sha1, sha256, sha512)
+- Extractor types supported (tar, 7z, winrar)
+- Output paths are relative
+- URL variables are valid ({_chromium_version})
+- Hash URL format correct (scheme|path|algorithm)
+</Accordion>
+
+### File Existence Check
+
+<CodeGroup>
+```bash check_files_exist.py
+# Quick validation for file lists
+python3 devutils/check_files_exist.py \
+  /path/to/chromium/src \
+  pruning.list
+```
+
+```bash Multiple lists
+python3 devutils/check_files_exist.py \
+  /path/to/chromium/src \
+  pruning.list \
+  domain_substitution.list
+```
+</CodeGroup>
+
+Useful for CI checks to quickly verify that:
+- Pruning lists reference valid files
+- Domain substitution targets exist
+- Resource files are present
+- Test data is available
+
+## Testing Workflows
+
+### Pre-Commit Hook
+
+Add to `.git/hooks/pre-commit`:
+
+```bash
+#!/bin/bash
+set -e
+
+echo "Validating configuration..."
+python3 devutils/validate_config.py
+
+echo "Running code quality checks..."  
+python3 devutils/run_devutils_pylint.py
+python3 devutils/run_utils_pylint.py
+
+echo "All validations passed!"
+```
+
+### CI Pipeline
+
+<Tabs>
+  <Tab title="GitHub Actions">
+    ```yaml
+    name: Validate
+    on: [push, pull_request]
+    
+    jobs:
+      validate:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v3
+          
+          - name: Set up Python
+            uses: actions/setup-python@v4
+            with:
+              python-version: '3.11'
+              
+          - name: Install dependencies
+            run: pip install requests
+            
+          - name: Validate configuration
+            run: python3 devutils/validate_config.py
+            
+          - name: Validate patches (remote)
+            run: |
+              python3 devutils/validate_patches.py \
+                --remote \
+                --verbose
+                
+          - name: Code quality
+            run: |
+              pip install pylint
+              python3 devutils/run_devutils_pylint.py
+              python3 devutils/run_utils_pylint.py
+    ```
+  </Tab>
+  
+  <Tab title="GitLab CI">
+    ```yaml
+    validate:config:
+      stage: validate
+      script:
+        - python3 devutils/validate_config.py
+        
+    validate:patches:
+      stage: validate
+      script:
+        - pip install requests
+        - python3 devutils/validate_patches.py --remote --verbose
+        
+    validate:quality:
+      stage: validate
+      script:
+        - pip install pylint
+        - python3 devutils/run_devutils_pylint.py
+        - python3 devutils/run_utils_pylint.py
+    ```
+  </Tab>
+  
+  <Tab title="Local Testing">
+    ```bash
+    #!/bin/bash
+    # test-all.sh - Run all validations locally
+    
+    set -e
+    
+    echo "==> Validating configuration"
+    python3 devutils/validate_config.py
+    
+    echo "==> Validating patches against local source"
+    if [ -d "../chromium/src" ]; then
+      python3 devutils/validate_patches.py \
+        --local ../chromium/src
+    else
+      echo "Skipping: no local source tree found"
+    fi
+    
+    echo "==> Running code quality checks"
+    if command -v pylint &> /dev/null; then
+      python3 devutils/run_devutils_pylint.py
+      python3 devutils/run_utils_pylint.py
+    else
+      echo "Skipping: pylint not installed"
+    fi
+    
+    echo "✓ All validations passed!"
+    ```
+  </Tab>
+</Tabs>
+
+### Development Iteration
+
+<Steps>
+  <Step title="Make changes">
+    Modify patches, configuration, or build scripts
+  </Step>
+  
+  <Step title="Quick validation">
+    ```bash
+    python3 devutils/validate_config.py
+    ```
+  </Step>
+  
+  <Step title="Patch validation">
+    ```bash
+    # If you have local source tree
+    python3 devutils/validate_patches.py \
+      --local /path/to/chromium/src
+    ```
+  </Step>
+  
+  <Step title="Full validation">
+    ```bash
+    # Before committing
+    python3 devutils/validate_patches.py --remote
+    ```
+  </Step>
+</Steps>
+
+## Debugging Failed Validations
+
+### Patch Application Failures
+
+<Accordion title="Patch does not apply cleanly">
+**Problem**: Patch fails with context mismatch
+
+**Solutions**:
+1. Update patch for current Chromium version:
+   ```bash
+   # Apply what you can and regenerate
+   cd /path/to/chromium/src
+   patch -p1 < /path/to/patch.patch
+   # Make manual fixes
+   git diff > /path/to/updated_patch.patch
+   ```
+
+2. Check if file was moved or renamed:
+   ```bash
+   # Search for file content in source tree
+   cd /path/to/chromium/src
+   grep -r "unique_pattern_from_patch" .
+   ```
+
+3. Use verbose mode to see exact failure:
+   ```bash
+   python3 devutils/validate_patches.py \
+     --local /path/to/chromium/src \
+     --verbose
+   ```
+</Accordion>
+
+<Accordion title="File not found in source tree">
+**Problem**: Patch references file that doesn't exist
+
+**Causes**:
+- File was removed in newer Chromium version
+- File path changed
+- File is in a dependency repository
+
+**Debug**:
+```bash
+# Check if file exists anywhere
+find /path/to/chromium/src -name "filename.cc"
+
+# Check git history
+cd /path/to/chromium/src
+git log --all --full-history -- path/to/file.cc
+```
+</Accordion>
+
+<Accordion title="Hash mismatch after domain substitution">
+**Problem**: Revert fails due to hash mismatch
+
+**Causes**:
+- Files modified after domain substitution
+- Cache doesn't match current source tree
+
+**Solutions**:
+1. Don't modify files after domain substitution
+2. If needed, revert before making changes:
+   ```bash
+   python3 utils/domain_substitution.py revert \
+     --cache domainsub.tar.gz \
+     /path/to/src
+   # Make your changes
+   python3 utils/domain_substitution.py apply \
+     --regex domain_regex.list \
+     --files domain_substitution.list \
+     --cache domainsub.tar.gz \
+     /path/to/src
+   ```
+</Accordion>
+
+### Configuration Issues
+
+<Accordion title="GN flags out of order">
+**Problem**: `check_gn_flags.py` reports unsorted flags
+
+**Solution**:
+```bash
+# Sort flags alphabetically
+sort -o flags.gn flags.gn
+
+# Verify
+python3 devutils/check_gn_flags.py
+```
+</Accordion>
+
+<Accordion title="Duplicate patches in series">
+**Problem**: Same patch listed multiple times
+
+**Solution**:
+1. Edit `patches/series`
+2. Remove duplicate lines
+3. Verify:
+   ```bash
+   python3 devutils/check_patch_files.py
+   ```
+</Accordion>
+
+<Accordion title="Unused patches detected">
+**Problem**: Patch files exist but aren't in series
+
+**Decide**:
+- Add to `patches/series` if needed
+- Delete if obsolete
+- Move to archive directory if keeping for reference
+
+**Verify**:
+```bash
+# Check what's unused
+python3 devutils/check_patch_files.py
+
+# Add to series or delete
+rm patches/path/to/unused.patch
+```
+</Accordion>
+
+## Validation in Build Scripts
+
+Integrate validation into build scripts:
+
+```bash
+#!/bin/bash
+# build.sh - Build with validation
+
+set -e
+
+# Validate before building
+echo "==> Validating configuration"
+python3 devutils/validate_config.py
+
+# Validate source tree after preparation
+echo "==> Validating source tree"
+python3 devutils/check_files_exist.py \
+  "$SOURCE_DIR" \
+  pruning.list \
+  domain_substitution.list
+
+# Build
+echo "==> Building"
+gn gen out/Release
+ninja -C out/Release chrome
+
+echo "✓ Build complete"
+```
+
+## Performance Considerations
+
+<CardGroup cols={2}>
+  <Card title="validate_patches.py --remote" icon="cloud">
+    **Time**: 10-20 minutes
+    <br/>
+    **Use**: CI, clean validation
+    <br/>
+    **Requires**: Internet, requests module
+  </Card>
+  
+  <Card title="validate_patches.py --local" icon="folder">
+    **Time**: 1-2 minutes
+    <br/>
+    **Use**: Development, iteration
+    <br/>
+    **Requires**: Local source tree
+  </Card>
+  
+  <Card title="validate_config.py" icon="file-check">
+    **Time**: 5-10 seconds
+    <br/>
+    **Use**: Quick checks, pre-commit
+    <br/>
+    **Requires**: Config files only
+  </Card>
+  
+  <Card title="check_files_exist.py" icon="search">
+    **Time**: 1-5 seconds
+    <br/>
+    **Use**: CI, quick validation
+    <br/>
+    **Requires**: Source tree, file lists
+  </Card>
+</CardGroup>
+
+## Exit Codes Reference
+
+All validation scripts use consistent exit codes:
+
+<ResponseField name="0" type="integer">
+  **Success** - All validations passed
+</ResponseField>
+
+<ResponseField name="1" type="integer">
+  **Failure** - One or more validations failed or warnings occurred
+</ResponseField>
+
+Use in scripts:
+```bash
+if python3 devutils/validate_config.py; then
+  echo "Configuration valid"
+else
+  echo "Configuration has errors" >&2
+  exit 1
+fi
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Always validate before committing">
+    Run at minimum:
+    ```bash
+    python3 devutils/validate_config.py
+    ```
+    
+    For patch changes:
+    ```bash
+    python3 devutils/validate_patches.py --local /path/to/src
+    ```
+  </Accordion>
+  
+  <Accordion title="Use CI for comprehensive checks">
+    Local validation is fast but may miss issues. Always have CI run:
+    - `validate_config.py`
+    - `validate_patches.py --remote`
+    - Code quality checks (pylint)
+  </Accordion>
+  
+  <Accordion title="Cache source files for debugging">
+    When debugging patch issues:
+    ```bash
+    python3 devutils/validate_patches.py \
+      --cache-remote /tmp/chromium_files
+    
+    # Inspect cached files
+    ls -la /tmp/chromium_files/
+    ```
+  </Accordion>
+  
+  <Accordion title="Keep validation fast">
+    - Use `--local` during development
+    - Only use `--remote` for final validation
+    - Run `validate_config.py` frequently (it's fast)
+  </Accordion>
+</AccordionGroup>
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="Developer Utilities" icon="tools" href="./devutils">
+    Complete reference for all developer utilities
+  </Card>
+  <Card title="Build Utilities" icon="hammer" href="./utils">
+    Core build utilities for patches and domain substitution
+  </Card>
+  <Card title="CI/CD Setup" icon="circle-play" href="../deployment/ci-cd">
+    Setting up automated builds and testing
+  </Card>
+  <Card title="Contributing" icon="code-pull-request" href="../contributing">
+    Guidelines for contributing to Helium
+  </Card>
+</CardGroup>

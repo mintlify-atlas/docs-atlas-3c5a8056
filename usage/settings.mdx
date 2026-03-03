@@ -1,0 +1,257 @@
+---
+title: Settings and Preferences
+description: Comprehensive guide to Helium's settings, preferences, and customization options
+---
+
+Helium provides extensive settings to customize your browsing experience while maintaining privacy and simplicity. This guide covers all major settings categories and what they control.
+
+## Settings Overview
+
+Access Helium settings by navigating to `chrome://settings` or using:
+
+<Tabs>
+  <Tab title="macOS">
+    `⌘ + ,` (Command + Comma)
+  </Tab>
+  <Tab title="Windows/Linux">
+    `Ctrl + ,` or via Menu → Settings
+  </Tab>
+</Tabs>
+
+## Settings Organization
+
+Helium reorganizes Chromium's settings menu for better usability. The menu order is:
+
+1. **You and Helium** - Profile and account settings
+2. **Appearance and behavior** - Visual customization and browser behavior
+3. **Privacy and security** - Privacy controls, permissions, and security
+4. **Performance** - Energy saver and performance optimization
+5. **Search engine** - Default search engine configuration
+6. **Autofill and passwords** - Form filling and credential management
+7. **Downloads** - Download location and behavior
+8. **On startup** - Startup page configuration
+9. **Extensions** - Installed extensions management
+10. **System** - Hardware acceleration and system integration
+
+<Note>
+Some sections like "AI Innovations" and "Safety Hub" have been removed from Helium as they conflict with the browser's privacy goals.
+</Note>
+
+## Appearance and Behavior
+
+### Appearance Settings
+
+Helium provides comprehensive appearance customization:
+
+<AccordionGroup>
+  <Accordion title="Theme and Colors">
+    - **Default theme**: Gray theme is set as default
+    - **Custom themes**: Install themes from Chrome Web Store
+    - **Reset to default**: Available on all platforms (including Linux)
+    - Helium uses custom color schemes and UI refinements
+  </Accordion>
+
+  <Accordion title="Toolbar and UI">
+    - **Home button**: Show/hide and configure home page
+    - **Bookmarks bar**: Always show, never show, or show on new tab only
+    - **Tab groups in bookmarks bar**: Display synced tab groups
+    - **Side panel position**: Choose left or right side
+    - **Tab hover cards**: Configure preview information
+    - **Window decorations**: Control system window frames (Linux)
+  </Accordion>
+
+  <Accordion title="Fonts and Appearance">
+    - **Page zoom**: Default zoom level for all pages
+    - **Font customization**: Configure default fonts and minimum font size
+    - Custom font settings accessible via dedicated subpage
+  </Accordion>
+</AccordionGroup>
+
+### Behavior Settings
+
+The "Behavior" section provides controls for browser interactions:
+
+```markdown
+- **Copy page URL shortcut**: Enable Ctrl+Shift+C (Cmd+Shift+C on Mac) to quickly copy the current page URL
+- **Auto-pin tab groups**: Automatically pin new tab groups to the bookmarks bar
+- **Split view drag and drop**: Allow dragging tabs to create split-screen views
+```
+
+<Note>
+The keyboard shortcut `Ctrl/Cmd+Shift+C` is configurable. When disabled, this shortcut opens DevTools inspector instead. You can change this in Appearance → Behavior settings.
+</Note>
+
+## Privacy and Security
+
+Helium makes significant changes to Chromium's privacy settings:
+
+### Privacy Page Organization
+
+The privacy page is reordered for better workflow:
+
+1. **Clear browsing data** - First priority for privacy
+2. **Site settings** - Manage site permissions and content settings
+3. **Security** - Connection security, DNS, and certificates
+4. **Helium services** - Privacy-respecting features and updates
+
+<Warning>
+The third-party cookies section is hidden by default as Helium uses more privacy-friendly cookie policies.
+</Warning>
+
+### Privacy Improvements
+
+<CardGroup cols={2}>
+  <Card title="Site Settings" icon="shield-check">
+    Manage permissions including:
+    - Cookies and site data
+    - Location, camera, microphone
+    - Pop-ups and redirects
+    - Notifications and more
+    
+    **Description updated**: "Manage site permissions and content settings (cookies, pop-ups, and more)"
+  </Card>
+
+  <Card title="Security" icon="lock">
+    Enhanced security controls:
+    - DNS-over-HTTPS with Quad9 option
+    - Certificate management
+    - Safe browsing settings
+    - ECH (Encrypted Client Hello)
+    
+    **Description updated**: "Connection security, DNS settings, certificate management, and other security settings"
+  </Card>
+</CardGroup>
+
+### Helium Services
+
+Configure privacy-respecting optional features:
+
+<Accordion title="Helium Services Options">
+  **Enable/Disable All Services**: Master toggle for all Helium-specific services
+  
+  **Individual Service Controls**:
+  - **Extension updates**: Allow extensions to check for updates
+  - **Extensions proxy**: Enable proxy for extension requests
+  - **DuckDuckGo !bangs**: Support for DuckDuckGo bang searches
+  - **Browser and component updates**: Automatic update downloads
+  - **Spell checking**: Download dictionary files for spell check
+  
+  **Advanced**:
+  - **Custom services origin**: Use your own instance of Helium services
+</Accordion>
+
+<Note>
+All Helium services are privacy-respecting and optional. You can disable any or all of them without affecting core browser functionality.
+</Note>
+
+## Search Settings
+
+Helium modifies search engine configuration:
+
+- **Search suggestions**: Moved from Privacy to Search page
+- **Add search engine button**: Quick access to add custom search engines
+- **Default engine**: Configure your preferred search engine
+
+<Tip>
+Helium supports DuckDuckGo !bangs natively. Enable this in Helium Services for quick searches like `!w wikipedia` or `!yt youtube`.
+</Tip>
+
+## Performance Settings
+
+Helium integrates with Chromium's performance features:
+
+### Energy Saver
+
+Customize battery-saving behavior:
+
+- **Energy Saver mode**: Enable when battery is low or always
+- **Frame rate limiting**: Configure maximum frame rate (see [Flags](/usage/flags) for advanced options)
+
+### Memory Saver
+
+Optimize memory usage by deactivating inactive tabs.
+
+## About Page
+
+The About page (`chrome://settings/help`) shows:
+
+- Current Helium version
+- Update status and controls
+- Copyright and license information
+
+<Info>
+**Modifications**: Removed promotional links to Google support pages. Update checking is integrated with Helium services preferences.
+</Info>
+
+## Advanced Settings
+
+### Removed Features
+
+The following Chromium features have been removed or disabled:
+
+- AI and machine learning features
+- Ad Topics API and Privacy Sandbox (advertising)
+- FedCM authentication bubbles
+- History Clusters
+- Safety Hub (replaced with standard privacy controls)
+- Translate suggestions (translation removed)
+- Autofill promotion links to Google Password Manager
+
+### Accessibility Settings
+
+Accessibility features are preserved and enhanced:
+
+- **Live Caption**: Automatic caption generation for media
+- **High contrast mode**: Improve visibility
+- **Keyboard shortcuts**: Including custom Helium shortcuts
+- **Page zoom**: Default zoom level
+
+## System Settings
+
+Configure system integration:
+
+- **Continue running background apps when Helium is closed**
+- **Use hardware acceleration when available**
+- **Default browser**: Set Helium as default (includes reject button)
+- **Proxy settings**: Configure network proxy
+
+## Tips and Best Practices
+
+<Steps>
+  <Step title="First Launch Configuration">
+    1. Review Privacy and Security settings
+    2. Configure Helium Services based on your needs
+    3. Set up your preferred search engine
+    4. Customize appearance and toolbar
+  </Step>
+  
+  <Step title="Privacy-Focused Setup">
+    1. Disable Helium Services if you prefer fully offline browsing
+    2. Review Site Settings and block unwanted permissions
+    3. Enable DNS-over-HTTPS with privacy-focused provider
+    4. Consider disabling hardware acceleration if concerned about GPU fingerprinting
+  </Step>
+  
+  <Step title="Performance Optimization">
+    1. Enable Memory Saver for better RAM management
+    2. Configure Energy Saver frame rate limits
+    3. Disable unused extensions
+    4. Clear browsing data periodically
+  </Step>
+</Steps>
+
+## Related Pages
+
+<CardGroup cols={2}>
+  <Card title="Keyboard Shortcuts" icon="keyboard" href="/usage/keyboard-shortcuts">
+    Learn all keyboard shortcuts including Helium-specific ones
+  </Card>
+  
+  <Card title="Chrome Flags" icon="flag" href="/usage/flags">
+    Advanced experimental features and Helium-specific flags
+  </Card>
+  
+  <Card title="Updates" icon="arrow-up" href="/usage/updates">
+    Update channels, automatic updates, and version management
+  </Card>
+</CardGroup>

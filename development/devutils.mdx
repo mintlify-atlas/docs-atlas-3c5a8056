@@ -1,0 +1,399 @@
+---
+title: Developer Utilities Reference
+description: Comprehensive reference for Helium's developer utilities and validation tools
+---
+
+This page documents the developer utilities available in the `devutils/` directory. These scripts help validate configuration files, check patches, and maintain code quality during development.
+
+## Overview
+
+The developer utilities are a collection of Python scripts designed to ensure the integrity and consistency of Helium's build configuration. They validate patches, check configuration files, and help maintain platform-specific patches.
+
+## Configuration Validation
+
+### validate_config.py
+
+Run comprehensive sanity checks on all configuration files.
+
+<CodeGroup>
+```bash Basic Usage
+python3 devutils/validate_config.py
+```
+</CodeGroup>
+
+<Accordion title="What it checks">
+- All patches exist and are referenced in patch order
+- No duplicate patches in series files
+- GN flags in `flags.gn` are sorted and not duplicated
+- `downloads.ini` conforms to its schema
+</Accordion>
+
+<Note>
+This script is hardcoded to run over Helium's config files in the repository root. Returns exit code 0 if no problems detected, 1 for warnings or errors.
+</Note>
+
+### check_gn_flags.py
+
+Validate GN build flags for proper formatting.
+
+<CodeGroup>
+```bash Default flags.gn
+python3 devutils/check_gn_flags.py
+```
+
+```bash Custom path
+python3 devutils/check_gn_flags.py --flags-gn /path/to/flags.gn
+```
+</CodeGroup>
+
+<ParamField path="-f, --flags-gn" type="path" default="flags.gn">
+  Path to the GN flags file to check
+</ParamField>
+
+**Validation checks:**
+- Flags are sorted alphabetically
+- No duplicate flag definitions
+- Proper key=value format
+
+### check_downloads_ini.py
+
+Validate the downloads configuration file schema.
+
+<CodeGroup>
+```bash Single file
+python3 devutils/check_downloads_ini.py
+```
+
+```bash Multiple files
+python3 devutils/check_downloads_ini.py -d downloads.ini platform_downloads.ini
+```
+</CodeGroup>
+
+<ParamField path="-d, --downloads-ini" type="path[]" default="downloads.ini">
+  List of downloads.ini files to validate
+</ParamField>
+
+Verifies that all download configurations conform to the expected schema, including URL formats, hash specifications, and extractor settings.
+
+## Patch Validation
+
+### validate_patches.py
+
+Validate that all patches apply cleanly against the Chromium source tree.
+
+<Warning>
+This script requires either a local unmodified source tree or the Python `requests` module to download files from Google.
+</Warning>
+
+<CodeGroup>
+```bash Local source tree
+python3 devutils/validate_patches.py \
+  --local /path/to/chromium/src \
+  --series patches/series \
+  --patches patches/
+```
+
+```bash Remote validation
+python3 devutils/validate_patches.py \
+  --remote \
+  --series patches/series \
+  --patches patches/
+```
+
+```bash Cache remote files
+python3 devutils/validate_patches.py \
+  --cache-remote /tmp/chromium_cache \
+  --series patches/series \
+  --patches patches/
+```
+</CodeGroup>
+
+<ParamField path="-s, --series" type="path" default="patches/series">
+  The series file listing patches to apply
+</ParamField>
+
+<ParamField path="-p, --patches" type="path" default="patches">
+  The patches directory to read from
+</ParamField>
+
+<ParamField path="-l, --local" type="path">
+  Use a local source tree (must be unmodified)
+</ParamField>
+
+<ParamField path="-r, --remote" type="boolean">
+  Download required source files from Google
+</ParamField>
+
+<ParamField path="-c, --cache-remote" type="path">
+  Store required remote files in a local directory (for debugging)
+</ParamField>
+
+<ParamField path="-v, --verbose" type="boolean">
+  Enable verbose logging for detailed error information
+</ParamField>
+
+<Accordion title="How it works">
+1. Loads all patches from the series file
+2. Parses Chromium's DEPS file to understand repository structure
+3. Downloads or reads required source files
+4. Applies patches using unidiff to verify they match cleanly
+5. Reports any patches that fail validation
+</Accordion>
+
+### check_patch_files.py
+
+Run sanity checks on patch files and series configuration.
+
+<CodeGroup>
+```bash Default directory
+python3 devutils/check_patch_files.py
+```
+
+```bash Custom patches directory
+python3 devutils/check_patch_files.py --patches /path/to/patches
+```
+</CodeGroup>
+
+<ParamField path="-p, --patches" type="path" default="patches">
+  Path to the patches directory
+</ParamField>
+
+**Validation checks:**
+- All patches are readable and parseable as unified diffs
+- All patches exist at specified paths
+- All patches are referenced by the series file
+- No duplicate patches in the series
+- No unused patches in the directory
+
+### check_files_exist.py
+
+Quick validation that files in a list exist in the source tree.
+
+<CodeGroup>
+```bash Check pruning list
+python3 devutils/check_files_exist.py /path/to/chromium/src pruning.list
+```
+
+```bash Multiple lists
+python3 devutils/check_files_exist.py /path/to/chromium/src \
+  pruning.list domain_substitution.list
+```
+</CodeGroup>
+
+<ParamField path="root_dir" type="path" required>
+  The directory to check files from
+</ParamField>
+
+<ParamField path="input_files" type="path[]" required>
+  One or more file lists to validate
+</ParamField>
+
+Useful for CI checks to quickly verify that pruning lists and domain substitution lists reference valid files.
+
+## Platform Patches
+
+### update_platform_patches.py
+
+Merge ungoogled-chromium patches with platform-specific patches.
+
+<CodeGroup>
+```bash Merge patches
+python3 devutils/update_platform_patches.py \
+  merge \
+  /path/to/platform/patches
+```
+
+```bash Unmerge patches
+python3 devutils/update_platform_patches.py \
+  unmerge \
+  /path/to/platform/patches
+```
+</CodeGroup>
+
+<ParamField path="command" type="enum" required>
+  <span>merge</span> - Prepend ungoogled-chromium patches to platform patches
+  <br/>
+  <span>unmerge</span> - Undo the merge and preserve changes
+</ParamField>
+
+<ParamField path="platform_patches" type="path" required>
+  Path to platform patches in GNU Quilt format
+</ParamField>
+
+<Accordion title="Merge workflow">
+**When merging:**
+1. Creates `series.orig` backup of platform series
+2. Copies ungoogled-chromium series to `series.prepend`
+3. Merges patches and creates `series.merged`
+4. Prepends ungoogled-chromium patches to platform patches
+
+**When unmerging:**
+1. Moves prepended patches back to original location
+2. Applies changes from `series.merged` to original series
+3. Preserves comments and inline annotations
+4. Removes intermediate files
+</Accordion>
+
+## List Management
+
+### update_lists.py
+
+Automatically update binary pruning and domain substitution lists.
+
+<Warning>
+This script downloads and unpacks the source tree. It will not apply binary pruning or domain substitution, only update the lists.
+</Warning>
+
+<CodeGroup>
+```bash Update lists
+python3 devutils/update_lists.py \
+  --tree /path/to/chromium/src \
+  --pruning pruning.list \
+  --domain-substitution domain_substitution.list \
+  --domain-regex domain_regex.list
+```
+
+```bash With exclusions
+python3 devutils/update_lists.py \
+  --tree /path/to/chromium/src \
+  --domain-exclude-prefix 'components/test/' \
+  --domain-exclude-prefix 'third_party/test_data/'
+```
+
+```bash Parallel processing
+python3 devutils/update_lists.py \
+  --tree /path/to/chromium/src \
+  --processes 8
+```
+</CodeGroup>
+
+<ParamField path="-t, --tree" type="path" required>
+  Path to the source tree to analyze
+</ParamField>
+
+<ParamField path="--pruning" type="path" default="pruning.list">
+  Output path for pruning.list
+</ParamField>
+
+<ParamField path="--domain-substitution" type="path" default="domain_substitution.list">
+  Output path for domain_substitution.list
+</ParamField>
+
+<ParamField path="--domain-regex" type="path" default="domain_regex.list">
+  Path to domain_regex.list patterns
+</ParamField>
+
+<ParamField path="--processes" type="integer">
+  Maximum worker processes (defaults to CPU count)
+</ParamField>
+
+<ParamField path="--domain-exclude-prefix" type="string">
+  Additional exclusion prefix (can be specified multiple times)
+</ParamField>
+
+<ParamField path="--no-error-unused" type="boolean">
+  Don't treat unused patterns as errors
+</ParamField>
+
+<Accordion title="How it determines files">
+**Binary Pruning:**
+- Matches against include patterns (higher priority)
+- Matches against exclude patterns  
+- Performs binary data detection on remaining files
+- Excludes safe file extensions (.png, .jpg, .txt, etc.)
+
+**Domain Substitution:**
+- Matches files against include patterns (*.cc, *.h, *.py, etc.)
+- Excludes paths by prefix (test directories, licenses)
+- Searches file contents for domain patterns
+- Only includes files with actual domain matches
+</Accordion>
+
+## Code Quality
+
+### Pylint Scripts
+
+Run pylint checks on different parts of the codebase.
+
+<CodeGroup>
+```bash Check devutils
+python3 devutils/run_devutils_pylint.py
+```
+
+```bash Check utils
+python3 devutils/run_utils_pylint.py
+```
+
+```bash Check other code
+python3 devutils/run_other_pylint.py
+```
+</CodeGroup>
+
+These scripts ensure code quality and consistency across the Python utilities.
+
+## Exit Codes
+
+All validation scripts follow a consistent exit code pattern:
+
+<ResponseField name="0" type="success">
+  No problems detected - all validation checks passed
+</ResponseField>
+
+<ResponseField name="1" type="error">
+  Warnings or errors occurred during validation
+</ResponseField>
+
+## Common Workflows
+
+<AccordionGroup>
+  <Accordion title="Pre-commit validation">
+    ```bash
+    # Validate all configuration
+    python3 devutils/validate_config.py
+    
+    # Check patches apply cleanly
+    python3 devutils/validate_patches.py --local /path/to/src
+    
+    # Run code quality checks
+    python3 devutils/run_devutils_pylint.py
+    ```
+  </Accordion>
+  
+  <Accordion title="Update lists after Chromium version bump">
+    ```bash
+    # Download/extract new Chromium source
+    # ...
+    
+    # Update binary pruning and domain substitution lists
+    python3 devutils/update_lists.py --tree /path/to/chromium/src
+    
+    # Validate the source tree has expected files
+    python3 devutils/check_files_exist.py /path/to/chromium/src \
+      pruning.list domain_substitution.list
+    ```
+  </Accordion>
+  
+  <Accordion title="Platform-specific patch workflow">
+    ```bash
+    # Merge ungoogled-chromium patches with platform patches
+    python3 devutils/update_platform_patches.py merge /path/to/platform/patches
+    
+    # Make platform-specific changes
+    # ...
+    
+    # Unmerge and preserve changes
+    python3 devutils/update_platform_patches.py unmerge /path/to/platform/patches
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="Build Utilities" icon="hammer" href="./utils">
+    Core build utilities for patches, domain substitution, and binary pruning
+  </Card>
+  <Card title="Validation Tools" icon="check" href="./validation">
+    Testing and validation utilities for ensuring build integrity
+  </Card>
+</CardGroup>

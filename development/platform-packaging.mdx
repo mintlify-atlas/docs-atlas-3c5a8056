@@ -1,0 +1,534 @@
+---
+title: Platform-Specific Packaging
+description: Guide to building and packaging Helium browser for Windows, macOS, and Linux
+---
+
+## Overview
+
+Helium is available on all major desktop platforms, with platform-specific repositories handling builds, packaging, and distribution. Each platform repository contains the necessary configuration and build scripts tailored to that operating system.
+
+## Platform Repositories
+
+Helium's source code is organized across platform-specific repositories:
+
+<CardGroup cols={3}>
+  <Card title="Helium for macOS" icon="apple" href="https://github.com/imputnet/helium-macos">
+    Universal binaries for Intel and Apple Silicon
+  </Card>
+  <Card title="Helium for Linux" icon="linux" href="https://github.com/imputnet/helium-linux">
+    AppImage builds for broad compatibility
+  </Card>
+  <Card title="Helium for Windows" icon="windows" href="https://github.com/imputnet/helium-windows">
+    Windows installers (auto-updates coming soon)
+  </Card>
+</CardGroup>
+
+## Architecture Overview
+
+Helium's build process follows this structure:
+
+<Steps>
+  <Step title="Core Repository">
+    The main [Helium repository](https://github.com/imputnet/helium) contains:
+    - Core patches in GNU Quilt format
+    - Configuration files (flags.gn, downloads.ini)
+    - Development and validation utilities
+    - Shared build logic
+  </Step>
+  
+  <Step title="Platform Repositories">
+    Each platform repository includes:
+    - Platform-specific patches
+    - Build scripts and configurations
+    - Packaging and distribution logic
+    - CI/CD workflows
+  </Step>
+  
+  <Step title="Build Process">
+    Platform builds:
+    1. Merge core patches with platform patches
+    2. Download and prepare Chromium source
+    3. Apply all patches
+    4. Build with platform-specific flags
+    5. Package for distribution
+  </Step>
+</Steps>
+
+## Download Locations
+
+Users can download Helium from multiple sources:
+
+### Official Website
+
+<Card title="helium.computer" icon="globe" href="https://helium.computer">
+  Automatically detects your OS and architecture, providing the correct build.
+</Card>
+
+### GitHub Releases
+
+Direct downloads from each platform's repository:
+
+<Tabs>
+  <Tab title="macOS">
+    **Repository:** [helium-macos/releases](https://github.com/imputnet/helium-macos/releases/latest)
+    
+    **Formats:**
+    - Universal DMG (Intel + Apple Silicon)
+    - Auto-updates included
+    
+    **System Requirements:**
+    - macOS 11.0 (Big Sur) or later
+    - Intel or Apple Silicon processor
+  </Tab>
+  
+  <Tab title="Linux">
+    **Repository:** [helium-linux/releases](https://github.com/imputnet/helium-linux/releases/latest)
+    
+    **Formats:**
+    - AppImage (portable, universal)
+    - Auto-updates via AppImageUpdate
+    
+    **System Requirements:**
+    - Modern Linux distribution
+    - GLIBC 2.31 or later
+    - X11 or Wayland
+  </Tab>
+  
+  <Tab title="Windows">
+    **Repository:** [helium-windows/releases](https://github.com/imputnet/helium-windows/releases/latest)
+    
+    **Formats:**
+    - Installer executable
+    - Portable ZIP (coming soon)
+    
+    **System Requirements:**
+    - Windows 10 version 1809 or later
+    - Windows 11 supported
+    
+    <Note>
+      Auto-updates for Windows are not yet implemented but are planned.
+    </Note>
+  </Tab>
+</Tabs>
+
+<Warning>
+  Helium is still in beta. Unexpected issues may occur. We are not responsible for any damage caused by usage of beta software.
+</Warning>
+
+## Working with Platform Patches
+
+When developing features that require platform-specific modifications, use the platform patch utilities:
+
+### Merging Core Patches into Platform
+
+The `update_platform_patches.py` utility helps merge Helium's core patches into platform-specific patch sets:
+
+```bash
+./devutils/update_platform_patches.py merge /path/to/platform/patches
+```
+
+**What happens:**
+
+<Steps>
+  <Step title="Backup creation">
+    Creates `series.orig` - backup of the platform's series file
+  </Step>
+  
+  <Step title="Prepend marker">
+    Creates `series.prepend` - copy of Helium's core patches series
+  </Step>
+  
+  <Step title="Merge operation">
+    Prepends Helium patches to platform patches using GNU Quilt merge logic
+  </Step>
+  
+  <Step title="Output generation">
+    Generates `series.merged` - combined series file
+  </Step>
+</Steps>
+
+**Example workflow:**
+
+```bash
+# Clone platform repository
+git clone https://github.com/imputnet/helium-macos.git
+cd helium-macos
+
+# Clone main Helium repository
+git clone https://github.com/imputnet/helium.git helium-core
+
+# Merge patches
+./helium-core/devutils/update_platform_patches.py merge ./patches
+
+# Now patches/series.merged contains combined patches
+```
+
+### Unmerging After Development
+
+After working with merged patches, extract changes back:
+
+```bash
+./devutils/update_platform_patches.py unmerge /path/to/platform/patches
+```
+
+**What happens:**
+
+<Steps>
+  <Step title="Move patches back">
+    Moves prepended Helium patches back to the core repository, preserving any modifications
+  </Step>
+  
+  <Step title="Reconstruct series">
+    Applies changes from `series.merged` back to the original `series.orig` format
+  </Step>
+  
+  <Step title="Preserve comments">
+    Maintains inline comments and formatting from the original series file
+  </Step>
+  
+  <Step title="Cleanup">
+    Removes intermediate files (`series.merged`, `series.orig`, `series.prepend`)
+  </Step>
+</Steps>
+
+<Warning>
+  Only unmerge after successfully merging. The unmerge process requires `series.orig`, `series.prepend`, and `series.merged` files created during merge.
+</Warning>
+
+## Building from Source
+
+Each platform has its own build process. See the respective repository for detailed instructions:
+
+### macOS Build Process
+
+<Steps>
+  <Step title="Prerequisites">
+    - Xcode Command Line Tools
+    - Python 3.8+
+    - Depot Tools (Chromium build tools)
+    - GNU Quilt
+  </Step>
+  
+  <Step title="Clone and setup">
+    ```bash
+    git clone https://github.com/imputnet/helium-macos.git
+    cd helium-macos
+    # Follow repository-specific setup instructions
+    ```
+  </Step>
+  
+  <Step title="Download Chromium source">
+    Platform repositories include scripts to download the correct Chromium version.
+  </Step>
+  
+  <Step title="Apply patches">
+    Patches are applied automatically using utilities from `utils/` directory.
+  </Step>
+  
+  <Step title="Build">
+    ```bash
+    # Build command varies by platform
+    # See platform repository README for specifics
+    ```
+  </Step>
+  
+  <Step title="Package">
+    Automated packaging creates DMG with proper signing and notarization (macOS).
+  </Step>
+</Steps>
+
+### Linux Build Process
+
+<Steps>
+  <Step title="Prerequisites">
+    - Build essentials (gcc, g++, make)
+    - Python 3.8+
+    - Depot Tools
+    - GNU Quilt
+    - Additional dependencies per Chromium docs
+  </Step>
+  
+  <Step title="Build AppImage">
+    Linux builds create portable AppImage files that run on most distributions.
+  </Step>
+  
+  <Step title="Test">
+    ```bash
+    chmod +x Helium-*.AppImage
+    ./Helium-*.AppImage
+    ```
+  </Step>
+</Steps>
+
+### Windows Build Process
+
+<Steps>
+  <Step title="Prerequisites">
+    - Visual Studio 2022
+    - Windows 10 SDK
+    - Python 3.8+
+    - Depot Tools
+  </Step>
+  
+  <Step title="Build environment">
+    Windows builds require specific Visual Studio components and SDK versions.
+  </Step>
+  
+  <Step title="Create installer">
+    Packaging creates a standard Windows installer executable.
+  </Step>
+</Steps>
+
+<Note>
+  Detailed build instructions are maintained in each platform repository's README to ensure they stay current with platform-specific requirements.
+</Note>
+
+## Platform-Specific Considerations
+
+### macOS
+
+<AccordionGroup>
+  <Accordion title="Code Signing">
+    macOS builds must be signed with an Apple Developer certificate to avoid Gatekeeper warnings.
+    
+    **Requirements:**
+    - Apple Developer account
+    - Valid Developer ID certificate
+    - Configured signing identity
+  </Accordion>
+  
+  <Accordion title="Notarization">
+    macOS 10.15+ requires notarization:
+    - Submit to Apple's notary service
+    - Staple ticket to DMG
+    - Automated in CI/CD pipeline
+  </Accordion>
+  
+  <Accordion title="Universal Binaries">
+    Helium for macOS is built as a universal binary:
+    - Single DMG works on Intel and Apple Silicon
+    - Optimized for each architecture
+    - Tested on both platforms
+  </Accordion>
+  
+  <Accordion title="Auto-Updates">
+    macOS builds include Sparkle framework:
+    - Checks for updates periodically
+    - Downloads and installs automatically
+    - Maintains user data and settings
+  </Accordion>
+</AccordionGroup>
+
+### Linux
+
+<AccordionGroup>
+  <Accordion title="AppImage Format">
+    AppImage provides maximum compatibility:
+    - Single file, no installation needed
+    - Works on most distributions
+    - Includes all dependencies
+    - Desktop integration available
+  </Accordion>
+  
+  <Accordion title="Library Dependencies">
+    AppImage bundles essential libraries:
+    - Graphics libraries (Mesa, etc.)
+    - Audio subsystem
+    - Font rendering
+    - Excludes base system libraries (glibc, etc.)
+  </Accordion>
+  
+  <Accordion title="Wayland and X11">
+    Tested on both display servers:
+    - Wayland support with XWayland fallback
+    - Native X11 support
+    - Automatic detection
+  </Accordion>
+  
+  <Accordion title="Auto-Updates">
+    AppImage updates via AppImageUpdate:
+    - Delta updates for efficiency
+    - Optional automatic checks
+    - Manual update available
+  </Accordion>
+</AccordionGroup>
+
+### Windows
+
+<AccordionGroup>
+  <Accordion title="Installer">
+    Windows installer features:
+    - System-wide or per-user installation
+    - Start menu shortcuts
+    - File associations
+    - Uninstaller
+  </Accordion>
+  
+  <Accordion title="Windows Defender">
+    Unsigned builds may trigger SmartScreen:
+    - Code signing recommended for distribution
+    - Users may need to approve first run
+    - Reputation builds over time
+  </Accordion>
+  
+  <Accordion title="File Associations">
+    Installer can set Helium as default browser:
+    - HTML files
+    - HTTP/HTTPS protocols
+    - PDF files (optional)
+  </Accordion>
+  
+  <Accordion title="Auto-Updates (Planned)">
+    Windows auto-updates are in development:
+    - Will use Chromium's update mechanism
+    - Background downloads
+    - Seamless installation
+  </Accordion>
+</AccordionGroup>
+
+## Distribution Pipeline
+
+Helium uses GitHub Actions for automated building and distribution:
+
+<Steps>
+  <Step title="Trigger">
+    - Push to main branch
+    - New version tag
+    - Manual workflow dispatch
+  </Step>
+  
+  <Step title="Build">
+    - Download Chromium source
+    - Apply patches
+    - Build browser
+    - Run validation tests
+  </Step>
+  
+  <Step title="Package">
+    - Create platform-specific packages
+    - Sign and notarize (macOS)
+    - Generate checksums
+  </Step>
+  
+  <Step title="Release">
+    - Upload to GitHub Releases
+    - Update latest release
+    - Trigger update checks
+  </Step>
+</Steps>
+
+## Testing Platform Builds
+
+Before releasing, test on each platform:
+
+<Tabs>
+  <Tab title="macOS">
+    **Intel Testing:**
+    - Clean install on Intel Mac
+    - Verify signature and notarization
+    - Test core functionality
+    - Check auto-update
+    
+    **Apple Silicon Testing:**
+    - Clean install on M-series Mac
+    - Verify native ARM performance
+    - Test Rosetta 2 compatibility (if needed)
+    - Validate universal binary
+  </Tab>
+  
+  <Tab title="Linux">
+    **Distribution Coverage:**
+    - Ubuntu LTS versions
+    - Fedora latest
+    - Arch Linux
+    - Debian stable
+    
+    **Display Server:**
+    - Test on Wayland
+    - Test on X11
+    - Verify rendering
+    - Check input methods
+  </Tab>
+  
+  <Tab title="Windows">
+    **Version Coverage:**
+    - Windows 10 (1809+)
+    - Windows 11
+    
+    **Installation Paths:**
+    - System-wide installation
+    - Per-user installation
+    - Portable extraction
+    
+    **Features:**
+    - File associations
+    - Default browser setting
+    - Uninstaller
+  </Tab>
+</Tabs>
+
+## Contributing to Platform Packaging
+
+When contributing platform-specific changes:
+
+1. **Open an issue** - Discuss the change with maintainers
+2. **Test locally** - Build and test on the target platform
+3. **Update documentation** - Document platform-specific requirements
+4. **Submit PR** - To the appropriate platform repository
+5. **Cross-platform check** - Ensure changes don't break other platforms
+
+<Card title="Platform Maintainers" icon="users">
+  Each platform repository may have dedicated maintainers familiar with platform-specific requirements. Reach out in issues or PRs for guidance.
+</Card>
+
+## Related Projects
+
+Helium's ecosystem includes supporting repositories:
+
+<CardGroup cols={2}>
+  <Card title="helium-services" icon="server" href="https://github.com/imputnet/helium-services">
+    Backend services for Helium features
+  </Card>
+  <Card title="helium-onboarding" icon="rocket" href="https://github.com/imputnet/helium-onboarding">
+    Onboarding page shown at `helium://setup`
+  </Card>
+  <Card title="ublock-origin-crx" icon="shield" href="https://github.com/imputnet/ublock-origin-crx">
+    Packaging for uBlock Origin extension
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Build fails on macOS with signing errors">
+    **Solution:**
+    - Verify Developer ID certificate is installed
+    - Check Keychain Access for certificate validity
+    - Ensure signing identity is correctly configured
+  </Accordion>
+  
+  <Accordion title="Linux AppImage won't run">
+    **Solution:**
+    - Make executable: `chmod +x Helium-*.AppImage`
+    - Check FUSE availability: `fusermount --version`
+    - Try extraction mode: `./Helium-*.AppImage --appimage-extract-and-run`
+  </Accordion>
+  
+  <Accordion title="Windows Defender blocks installer">
+    **Solution:**
+    - This is normal for unsigned builds
+    - Click "More info" → "Run anyway"
+    - For distribution, use code signing certificate
+  </Accordion>
+  
+  <Accordion title="Patches don't apply to platform source">
+    **Solution:**
+    - Verify Chromium version matches
+    - Check patch merge was successful
+    - Run `./devutils/validate_patches.py --local /path/to/src`
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+  Platform packaging is complex and platform-specific. When in doubt, refer to the official documentation in each platform repository and don't hesitate to ask for help in issues.
+</Note>

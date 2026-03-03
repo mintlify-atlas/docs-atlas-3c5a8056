@@ -1,0 +1,559 @@
+---
+title: Build Utilities Reference  
+description: Core utilities for building Helium including patch management, domain substitution, and binary pruning
+---
+
+This page documents the build utilities in the `utils/` directory. These are the core tools used throughout the Helium build process for source tree preparation, patching, and packaging.
+
+## Overview
+
+The build utilities provide essential functionality for:
+- Applying and managing patches in GNU Quilt format
+- Domain substitution to replace Google domains
+- Binary pruning to remove unwanted files
+- Source tree downloads and extraction
+- Portable package creation
+
+## Patch Management
+
+### patches.py
+
+Apply and merge patches in GNU Quilt format.
+
+<CodeGroup>
+```bash Apply patches
+python3 utils/patches.py apply \
+  /path/to/source/tree \
+  /path/to/patches
+```
+
+```bash Apply multiple patch directories
+python3 utils/patches.py apply \
+  /path/to/source/tree \
+  /path/to/patches1 \
+  /path/to/patches2
+```
+
+```bash Custom patch binary
+python3 utils/patches.py apply \
+  --patch-bin /usr/bin/gpatch \
+  /path/to/source/tree \
+  /path/to/patches
+```
+
+```bash Strict application (no fuzz)
+python3 utils/patches.py apply \
+  --no-fuzz \
+  /path/to/source/tree \
+  /path/to/patches
+```
+</CodeGroup>
+
+<ParamField path="target" type="path" required>
+  The directory tree to apply patches onto
+</ParamField>
+
+<ParamField path="patches" type="path[]" required>
+  One or more directories containing patches in GNU Quilt format
+</ParamField>
+
+<ParamField path="--patch-bin" type="string">
+  The GNU patch command to use (auto-detected if omitted)
+</ParamField>
+
+<ParamField path="--fuzz / --no-fuzz" type="boolean" default={true}>
+  Enable or disable fuzzy matching when applying patches
+</ParamField>
+
+<Accordion title="Patch detection order">
+The script finds the patch binary in this order:
+1. Uses `--patch-bin` if specified
+2. Checks `PATCH_BIN` environment variable  
+3. Searches for `patch` in PATH using `which`
+</Accordion>
+
+### Merging Patches
+
+Combine multiple patch directories into a single directory.
+
+<CodeGroup>
+```bash Merge patches
+python3 utils/patches.py merge \
+  /path/to/destination \
+  /path/to/source1 \
+  /path/to/source2
+```
+
+```bash Prepend to existing
+python3 utils/patches.py merge \
+  --prepend \
+  /path/to/existing \
+  /path/to/new_patches
+```
+</CodeGroup>
+
+<ParamField path="destination" type="path" required>
+  Directory to write merged patches (must not exist unless using --prepend)
+</ParamField>
+
+<ParamField path="source" type="path[]" required>
+  GNU Quilt patch directories to merge
+</ParamField>
+
+<ParamField path="-p, --prepend" type="boolean">
+  Prepend patches to existing destination directory
+</ParamField>
+
+<Warning>
+Merging will fail if any patches have conflicting paths between source directories.
+</Warning>
+
+### Dry Run Checking
+
+The module also exports `dry_run_check()` for programmatic patch validation:
+
+```python
+from patches import dry_run_check
+
+return_code, stdout, stderr = dry_run_check(
+    patch_path=Path('my.patch'),
+    tree_path=Path('/path/to/source'),
+    patch_bin_path=None  # Auto-detect
+)
+```
+
+## Domain Substitution
+
+### domain_substitution.py
+
+Replace Google domains with blockable placeholder strings.
+
+<Note>
+Domain substitution makes it easier to identify and block Google services using hosts files or firewall rules.
+</Note>
+
+<CodeGroup>
+```bash Apply domain substitution
+python3 utils/domain_substitution.py apply \
+  --regex domain_regex.list \
+  --files domain_substitution.list \
+  --cache domainsub.tar.gz \
+  /path/to/source/tree
+```
+
+```bash Without cache
+python3 utils/domain_substitution.py apply \
+  --regex domain_regex.list \
+  --files domain_substitution.list \
+  /path/to/source/tree
+```
+
+```bash Revert substitution  
+python3 utils/domain_substitution.py revert \
+  --cache domainsub.tar.gz \
+  /path/to/source/tree
+```
+</CodeGroup>
+
+### Apply Mode
+
+<ParamField path="directory" type="path" required>
+  The directory to apply domain substitution
+</ParamField>
+
+<ParamField path="-r, --regex" type="path" required>
+  Path to domain_regex.list containing substitution patterns
+</ParamField>
+
+<ParamField path="-f, --files" type="path" required>
+  Path to domain_substitution.list (files to process)
+</ParamField>
+
+<ParamField path="-c, --cache" type="path">
+  Path to store domain substitution cache (compressed tar)
+</ParamField>
+
+<Accordion title="How domain substitution works">
+1. Reads regex patterns from domain_regex.list
+2. Processes each file in domain_substitution.list
+3. Applies regex substitutions to file contents
+4. Saves original content to cache with CRC32 hashes
+5. Updates file timestamps to track modifications
+6. Creates cache index for reverting changes
+</Accordion>
+
+### Revert Mode
+
+<ParamField path="directory" type="path" required>
+  The directory to reverse domain substitution
+</ParamField>
+
+<ParamField path="-c, --cache" type="path" required>
+  Path to the domain substitution cache
+</ParamField>
+
+<Accordion title="Revert process">
+1. Extracts cache to temporary directory
+2. Validates substituted files match expected hashes
+3. Restores original files from cache
+4. Removes cache file if successful
+5. Warns about unused files in cache
+</Accordion>
+
+<Warning>
+Revert will fail if any substituted files have been modified after domain substitution was applied.
+</Warning>
+
+### Domain Regex Format
+
+The `domain_regex.list` file uses this format:
+
+```text
+pattern#replacement
+google\.com#PLACEHOLDER_GOOGLE_COM
+chromium\.org#PLACEHOLDER_CHROMIUM_ORG
+```
+
+- Pattern: Regular expression to match
+- Delimiter: `#` character
+- Replacement: String to replace matches with
+
+## Binary Pruning
+
+### prune_binaries.py
+
+Remove binary files and unwanted directories from the source tree.
+
+<CodeGroup>
+```bash Basic pruning
+python3 utils/prune_binaries.py \
+  /path/to/source/tree \
+  pruning.list
+```
+
+```bash Keep contingent paths
+python3 utils/prune_binaries.py \
+  --keep-contingent-paths \
+  /path/to/source/tree \
+  pruning.list
+```
+
+```bash Keep sysroot
+python3 utils/prune_binaries.py \
+  --sysroot amd64 \
+  /path/to/source/tree \
+  pruning.list
+```
+</CodeGroup>
+
+<ParamField path="directory" type="path" required>
+  The directory to apply binary pruning
+</ParamField>
+
+<ParamField path="pruning_list" type="path" required>
+  Path to pruning.list file
+</ParamField>
+
+<ParamField path="--keep-contingent-paths" type="boolean">
+  Skip pruning contingent paths (useful when building with Google tooling)
+</ParamField>
+
+<ParamField path="--sysroot" type="enum">
+  <span>amd64</span> - Skip pruning amd64 sysroot
+  <br/>
+  <span>i386</span> - Skip pruning i386 sysroot
+</ParamField>
+
+### Contingent Paths
+
+Contingent paths are automatically pruned unless `--keep-contingent-paths` is specified:
+
+<AccordionGroup>
+  <Accordion title="Build tools and dependencies">
+    - CIPD packages (buildtools, third_party tools)
+    - GCS downloads (sysroots, test data)
+    - Google-specific build tools
+    - JDK packages
+  </Accordion>
+  
+  <Accordion title="Test data and fixtures">
+    - Web tests and browser tests
+    - Performance test datasets
+    - Fuzzer corpora
+    - Test fonts and media files
+  </Accordion>
+  
+  <Accordion title="Platform-specific">
+    - Android WebView
+    - iOS sources
+    - Chromecast
+    - Native Client
+  </Accordion>
+</AccordionGroup>
+
+<Note>
+Some files are always kept even in contingent paths: `.gn`, `.gni`, `.grd`, `.grdp`, `.isolate`, and `.pydeps` files.
+</Note>
+
+## Downloads Management
+
+### downloads.py
+
+Download, verify, and extract required files into the source tree.
+
+<CodeGroup>
+```bash Retrieve downloads
+python3 utils/downloads.py retrieve \
+  /path/to/downloads.ini \
+  /path/to/download/directory
+```
+
+```bash Unpack archives
+python3 utils/downloads.py unpack \
+  /path/to/downloads.ini \
+  /path/to/download/directory \
+  /path/to/source/tree
+```
+</CodeGroup>
+
+<ParamField path="downloads_ini" type="path" required>
+  Path to downloads.ini configuration
+</ParamField>
+
+<ParamField path="download_directory" type="path" required>
+  Directory to store downloaded files
+</ParamField>
+
+<ParamField path="source_tree" type="path">
+  Source tree path (for unpack command)
+</ParamField>
+
+### downloads.ini Format
+
+The configuration file uses INI format:
+
+```ini
+[download_name]
+url = https://example.com/file.tar.gz
+download_filename = file.tar.gz
+output_path = third_party/example
+sha256 = abc123...
+extractor = tar
+strip_leading_dirs = 1
+```
+
+<ResponseField name="url" type="string" required>
+  Download URL (supports `{_chromium_version}` variable)
+</ResponseField>
+
+<ResponseField name="download_filename" type="string" required>
+  Filename to save as
+</ResponseField>
+
+<ResponseField name="output_path" type="string" required>
+  Relative path in source tree for extraction
+</ResponseField>
+
+<ResponseField name="sha256" type="string">
+  Expected SHA256 hash for verification
+</ResponseField>
+
+<ResponseField name="extractor" type="enum">
+  <span>tar</span> - Use tar for extraction
+  <br/>
+  <span>7z</span> - Use 7-Zip
+  <br/>
+  <span>winrar</span> - Use WinRAR
+</ResponseField>
+
+<ResponseField name="strip_leading_dirs" type="integer">
+  Number of leading directory components to strip during extraction
+</ResponseField>
+
+<Accordion title="Hash verification">
+Supported hash algorithms:
+- MD5 (`md5` key)
+- SHA1 (`sha1` key)  
+- SHA256 (`sha256` key)
+- SHA512 (`sha512` key)
+- Hash URLs (`hash_url` key with format: `chromium|path|algorithm`)
+
+Multiple hashes can be specified for redundant verification.
+</Accordion>
+
+## Source Tree Cloning
+
+### clone.py
+
+Clone a Chromium source tree from various sources.
+
+```bash
+python3 utils/clone.py \
+  /path/to/destination \
+  --downloads-ini downloads.ini
+```
+
+This utility handles downloading the Chromium source tarball and extracting it to the specified destination.
+
+## Packaging
+
+### filescfg.py
+
+Create portable packages using FILES.cfg specifications.
+
+<CodeGroup>
+```bash Create archive
+python3 utils/filescfg.py archive \
+  /path/to/FILES.cfg \
+  /path/to/build_output \
+  /path/to/output.tar.xz
+```
+
+```bash Reproducible builds
+python3 utils/filescfg.py archive \
+  --timestamp 1640000000 \
+  /path/to/FILES.cfg \
+  /path/to/build_output \
+  /path/to/output.tar.xz
+```
+</CodeGroup>
+
+<ParamField path="cfg_path" type="path" required>
+  Path to FILES.cfg specification
+</ParamField>
+
+<ParamField path="build_outputs" type="path" required>
+  Directory containing build outputs
+</ParamField>
+
+<ParamField path="output_path" type="path" required>
+  Output archive path (.tar.gz, .tar.xz, or .zip)
+</ParamField>
+
+<ParamField path="--timestamp" type="integer">
+  Unix timestamp for reproducible archives
+</ParamField>
+
+<Accordion title="FILES.cfg format">
+FILES.cfg is a Python file that defines which files to include:
+
+```python
+FILES = [
+  {
+    'filename': 'chrome',
+    'buildtype': ['official'],
+  },
+  {
+    'filename': '*.so',
+    'buildtype': ['official'],
+    'arch': ['64bit'],
+  },
+]
+```
+
+Each entry supports:
+- `filename`: Glob pattern
+- `buildtype`: List of build types (must include 'official')
+- `arch`: CPU architecture filter
+</Accordion>
+
+## Version Management
+
+### helium_version.py
+
+Manage Helium version information.
+
+```bash
+python3 utils/helium_version.py \
+  /path/to/source/tree \
+  --set-version 1.2.3
+```
+
+This utility updates version strings throughout the source tree to maintain consistent branding.
+
+## Name Substitution
+
+### name_substitution.py
+
+Replace product names throughout the source tree.
+
+```bash
+python3 utils/name_substitution.py \
+  /path/to/source/tree \
+  --product-name "Helium"
+```
+
+Used to rebrand Chromium references to Helium in source files.
+
+## Resource Generation
+
+### generate_resources.py
+
+Generate resource files from templates.
+
+```bash
+python3 utils/generate_resources.py \
+  /path/to/resources \
+  /path/to/output
+```
+
+Processes resource templates and generates final resource files for the build.
+
+## Common Patterns
+
+<AccordionGroup>
+  <Accordion title="Complete source tree preparation">
+    ```bash
+    # 1. Clone source tree
+    python3 utils/clone.py /path/to/src --downloads-ini downloads.ini
+    
+    # 2. Prune unwanted files
+    python3 utils/prune_binaries.py /path/to/src pruning.list
+    
+    # 3. Apply domain substitution
+    python3 utils/domain_substitution.py apply \
+      --regex domain_regex.list \
+      --files domain_substitution.list \
+      --cache domainsub.tar.gz \
+      /path/to/src
+    
+    # 4. Apply patches
+    python3 utils/patches.py apply /path/to/src patches/
+    ```
+  </Accordion>
+  
+  <Accordion title="Reverting changes for testing">
+    ```bash
+    # Revert patches
+    python3 utils/patches.py apply --reverse /path/to/src patches/
+    
+    # Revert domain substitution
+    python3 utils/domain_substitution.py revert \
+      --cache domainsub.tar.gz \
+      /path/to/src
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Module Imports
+
+These utilities can also be imported as Python modules:
+
+```python
+from patches import apply_patches, merge_patches, generate_patches_from_series
+from domain_substitution import apply_substitution, revert_substitution  
+from prune_binaries import prune_files, prune_dirs
+from downloads import DownloadInfo
+from filescfg import filescfg_generator
+```
+
+## See Also
+
+<CardGroup cols={2}>
+  <Card title="Developer Utilities" icon="tools" href="./devutils">
+    Validation and development tools for maintaining Helium
+  </Card>
+  <Card title="Build Process" icon="gear" href="../building/overview">
+    Complete guide to building Helium from source
+  </Card>
+</CardGroup>

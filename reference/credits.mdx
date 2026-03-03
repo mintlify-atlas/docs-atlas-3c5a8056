@@ -1,0 +1,148 @@
+---
+title: Credits & Acknowledgments
+description: Recognizing the projects and people that make Helium possible
+---
+
+Helium stands on the shoulders of giants. This page acknowledges the incredible open-source projects and communities that make Helium possible.
+
+## Core Foundation
+
+### ungoogled-chromium
+
+<Card
+  title="ungoogled-chromium"
+  icon="heart"
+  href="https://github.com/ungoogled-software/ungoogled-chromium"
+>
+  The privacy-focused Chromium variant that serves as Helium's foundation
+</Card>
+
+Helium is proudly based on **ungoogled-chromium**, a project that removes Google's integration from Chromium and enhances privacy, control, and transparency.
+
+<Note>
+It wouldn't be possible for us to get rid of Google's bloat and establish a development and building pipeline this quickly without ungoogled-chromium. Huge shout-out to everyone behind this incredible project!
+</Note>
+
+**Why ungoogled-chromium matters:**
+- Removes Google-specific web service integrations
+- Disables background requests that communicate with Google
+- Removes dependency on Google web services
+- Enhances privacy and control over the browsing experience
+
+**Helium's commitment:** We intend to contribute improvements and patches upstream to ungoogled-chromium, giving back to the project that made Helium possible.
+
+### The Chromium Project
+
+<Card
+  title="The Chromium Project"
+  icon="chrome"
+  href="https://www.chromium.org/"
+>
+  The open-source browser engine at the heart of Helium
+</Card>
+
+[The Chromium Project](https://www.chromium.org/) is at the core of Helium, providing the fundamental browser engine and architecture. Without Chromium's open-source nature and the dedication of its contributors, projects like Helium wouldn't exist.
+
+**What Chromium provides:**
+- Modern, performant web rendering engine
+- Extensive web standards support
+- Security architecture and sandboxing
+- Developer tools and APIs
+- Cross-platform compatibility
+
+## Upstream Dependencies
+
+These projects contribute patches and improvements that flow through ungoogled-chromium to benefit Helium:
+
+<AccordionGroup>
+  <Accordion title="Inox Patchset" icon="code">
+    The Inox patchset provides privacy-focused patches for Chromium that remove unwanted tracking, telemetry, and Google-specific integrations.
+    
+    These patches help ensure that Chromium respects user privacy by default, removing features that phone home or track user behavior.
+    
+    [View on GitHub](https://github.com/gcarq/inox-patchset)
+  </Accordion>
+
+  <Accordion title="Debian Chromium Packaging" icon="box">
+    Debian's Chromium package includes valuable downstream patches and improvements developed by the Debian community for enhanced stability, security, and integration with Linux systems.
+    
+    These patches often address security issues and improve compatibility with various system configurations.
+    
+    [View on Debian Tracker](https://tracker.debian.org/pkg/chromium-browser)
+  </Accordion>
+
+  <Accordion title="Bromite" icon="mobile">
+    Bromite is a Chromium fork with built-in ad blocking and privacy enhancements, particularly focused on mobile platforms.
+    
+    Many of Bromite's privacy-focused patches and improvements contribute to the broader Chromium privacy ecosystem.
+    
+    [View on GitHub](https://github.com/bromite/bromite)
+  </Accordion>
+
+  <Accordion title="Iridium Browser" icon="browser">
+    Iridium Browser is a privacy-focused browser that contributes patches enhancing user privacy and security in Chromium.
+    
+    Their work on privacy improvements helps the entire Chromium-based browser ecosystem.
+    
+    [Visit Website](https://iridiumbrowser.de/)
+  </Accordion>
+</AccordionGroup>
+
+## Additional Components
+
+### uBlock Origin
+
+<Card
+  title="uBlock Origin"
+  icon="shield-halved"
+  href="https://github.com/gorhill/uBlock"
+>
+  The efficient, wide-spectrum content blocker
+</Card>
+
+Helium integrates **uBlock Origin** to provide best-in-class ad blocking and privacy protection out of the box. uBlock Origin is maintained by Raymond Hill and contributors, offering unbiased ad-blocking without bloat.
+
+**Our custom packaging:** [github.com/imputnet/ublock-origin-crx](https://github.com/imputnet/ublock-origin-crx)
+
+## Open Source Philosophy
+
+Helium embraces the open-source philosophy that makes all these projects possible:
+
+<CardGroup cols={2}>
+  <Card title="Transparency" icon="eye">
+    All code is publicly available and auditable
+  </Card>
+  
+  <Card title="Collaboration" icon="users">
+    Contributing improvements back to upstream projects
+  </Card>
+  
+  <Card title="Community" icon="heart">
+    Built by people, for people, with love
+  </Card>
+  
+  <Card title="Freedom" icon="unlock">
+    Respecting user freedom and control
+  </Card>
+</CardGroup>
+
+## Thank You
+
+To everyone who has contributed to these projects - developers, testers, designers, documenters, and users who provide feedback - **thank you**. Your work makes privacy-respecting software accessible to everyone.
+
+<Tip>
+Interested in contributing to Helium or any of these projects? Check out the respective GitHub repositories for contribution guidelines and ways to get involved.
+</Tip>
+
+## Contributing to Helium
+
+Helium is open source and welcomes contributions. Whether you're:
+- Reporting bugs
+- Suggesting features
+- Contributing code
+- Improving documentation
+- Testing beta releases
+
+Your help makes Helium better for everyone.
+
+Visit our [GitHub repository](https://github.com/imputnet/helium) to get started.

@@ -1,0 +1,321 @@
+---
+title: Privacy Features
+description: How Helium protects your privacy through build-time flags, disabled services, and privacy-first defaults
+---
+
+Helium is built with privacy as the foundation. Unlike mainstream browsers, privacy isn't an optional feature - it's the default configuration.
+
+## Build-Time Privacy Flags
+
+Helium's privacy starts at compile time with flags configured in `flags.gn`:
+
+```gn
+# Safe Browsing completely disabled
+safe_browsing_mode=0
+
+# No Google services
+google_api_key=""
+google_default_client_id=""
+google_default_client_secret=""
+use_official_google_api_keys=false
+
+# Disable unnecessary services
+enable_hangout_services_extension=false
+enable_mdns=false
+enable_remoting=false
+enable_reporting=false
+enable_service_discovery=false
+
+# No field trials or A/B testing
+disable_fieldtrial_testing_config=true
+```
+
+<Note>
+These flags are set at build time and cannot be re-enabled at runtime, ensuring privacy cannot be accidentally compromised.
+</Note>
+
+## What Each Flag Means
+
+<AccordionGroup>
+  <Accordion title="safe_browsing_mode=0">
+    **Safe Browsing Disabled**
+    
+    Google Safe Browsing sends URLs you visit to Google for malware checking. While this can protect against phishing, it creates a privacy concern.
+    
+    Helium sets this to `0` to completely disable Safe Browsing:
+    - No URLs sent to Google
+    - No real-time lookups
+    - No Safe Browsing database downloads
+    
+    You retain full control over which sites you visit without third-party monitoring.
+  </Accordion>
+  
+  <Accordion title="Google API Keys">
+    **No Google Service Integration**
+    
+    Setting all Google API keys to empty strings disables:
+    - Google account sync
+    - Chrome Web Store integration (uses alternative methods)
+    - Google-specific features
+    - Default search engine telephony
+    
+    This ensures Helium doesn't "phone home" to Google services by default.
+  </Accordion>
+  
+  <Accordion title="Hangout Services">
+    **No Google Hangouts Extension**
+    
+    The Hangouts extension enables Google Meet/Hangouts calling features. Helium removes this entirely:
+    
+    ```gn
+    enable_hangout_services_extension=false
+    ```
+    
+    This eliminates unnecessary background processes and potential privacy vectors.
+  </Accordion>
+  
+  <Accordion title="mDNS (Multicast DNS)">
+    **No Local Network Discovery**
+    
+    mDNS enables service discovery on local networks (finding printers, Chromecasts, etc.):
+    
+    ```gn
+    enable_mdns=false
+    ```
+    
+    Disabled to prevent:
+    - Automatic network scanning
+    - Device fingerprinting via local network topology
+    - Unnecessary network traffic
+  </Accordion>
+  
+  <Accordion title="Remoting">
+    **No Chrome Remote Desktop**
+    
+    Chrome Remote Desktop allows remote access to your computer:
+    
+    ```gn
+    enable_remoting=false
+    ```
+    
+    Helium removes this feature entirely as it's not needed for most users and represents a security surface.
+  </Accordion>
+  
+  <Accordion title="Reporting">
+    **No Telemetry or Crash Reports**
+    
+    Chromium includes extensive telemetry and reporting features:
+    
+    ```gn
+    enable_reporting=false
+    ```
+    
+    This disables:
+    - Usage statistics collection
+    - Crash report uploads
+    - Performance metrics
+    - Feature usage tracking
+    
+    Your browser usage stays on your device.
+  </Accordion>
+  
+  <Accordion title="Service Discovery">
+    **No Automatic Service Detection**
+    
+    Service discovery finds and connects to network services automatically:
+    
+    ```gn
+    enable_service_discovery=false
+    ```
+    
+    Disabled to prevent automatic connections and fingerprinting.
+  </Accordion>
+  
+  <Accordion title="Field Trials">
+    **No A/B Testing or Experiments**
+    
+    Chromium uses field trials for A/B testing features on users:
+    
+    ```gn
+    disable_fieldtrial_testing_config=true
+    ```
+    
+    Helium disables this to ensure:
+    - Consistent behavior for all users
+    - No telemetry for experiment tracking
+    - Predictable feature set
+  </Accordion>
+</AccordionGroup>
+
+## Settings Page Reorganization
+
+Helium restructures the Settings page to prioritize privacy controls:
+
+### Simplified Privacy Page
+
+The privacy page removes clutter and focuses on essential controls:
+
+```html
+<!-- Third-party cookies link removed -->
+<template is="dom-if" if="[[false]]">
+  <cr-link-row id="thirdPartyCookiesLinkRow">...</cr-link-row>
+</template>
+```
+
+**Reorganized order:**
+1. Clear Browsing Data
+2. Site Settings (permissions, cookies, pop-ups)
+3. Security (connection security, DNS, certificates)
+4. Helium Services (privacy-preserving services)
+
+<Note>
+Cookies are still fully manageable through Site Settings - we just removed the redundant dedicated page.
+</Note>
+
+### Clearer Descriptions
+
+Settings descriptions focus on what they actually do:
+
+```
+Permissions: "Manage site permissions and content settings 
+             (cookies, pop-ups, and more)"
+
+Security: "Connection security, DNS settings, certificate management, 
+           and other security settings"
+```
+
+No marketing language - just clear explanations.
+
+## Helium Services
+
+Helium includes optional privacy-preserving services:
+
+<CardGroup cols={2}>
+  <Card title="Extension Proxy" icon="shield">
+    Download extensions through Helium's proxy to avoid direct Chrome Web Store connections
+    
+    **Pref:** `helium.services.ext_proxy`  
+    **Default:** Enabled
+  </Card>
+  
+  <Card title="Native Bangs" icon="bolt">
+    Fetch the !bangs list from Helium services for DuckDuckGo-style shortcuts
+    
+    **Pref:** `helium.services.bangs`  
+    **Default:** Enabled
+  </Card>
+</CardGroup>
+
+### Service Configuration
+
+All services are controlled through preferences in `chrome/browser/ui/browser_ui_prefs.cc`:
+
+```cpp
+registry->RegisterBooleanPref(prefs::kHeliumServicesEnabled, true);
+registry->RegisterBooleanPref(prefs::kHeliumBangsEnabled, true);
+registry->RegisterBooleanPref(prefs::kHeliumExtProxyEnabled, true);
+registry->RegisterStringPref(prefs::kHeliumServicesOrigin, "");
+```
+
+<Warning>
+All Helium Services can be disabled in Settings > Privacy > Helium Services if you prefer complete isolation.
+</Warning>
+
+## Network Request Policy
+
+Helium's codebase includes helpers to control when network requests are made:
+
+```cpp
+bool ShouldAccessServices(const PrefService& prefs);
+bool ShouldFetchBangs(const PrefService& prefs);
+bool ShouldAccessExtensionService(const PrefService& prefs);
+```
+
+These helpers ensure:
+- User preferences are respected
+- No automatic connections without permission
+- Clear control over when network activity occurs
+
+### Bang Loading Example
+
+From `template_url_bang_manager.cc`:
+
+```cpp
+request->load_flags = helium::ShouldFetchBangs(prefs)
+                        ? net::LOAD_NORMAL
+                        : net::LOAD_ONLY_FROM_CACHE;
+```
+
+If bangs are disabled, the browser will only use cached data - no network request is made.
+
+## Privacy by Design
+
+Every feature in Helium considers privacy implications:
+
+<Steps>
+  <Step title="Evaluate Network Requirements">
+    Does this feature require network access? Can it work offline?
+  </Step>
+  
+  <Step title="User Control">
+    Add a preference so users can disable if desired
+  </Step>
+  
+  <Step title="Respect Settings">
+    Check preferences before making any network request
+  </Step>
+  
+  <Step title="Minimal Data">
+    Only send what's absolutely necessary - no fingerprinting data
+  </Step>
+</Steps>
+
+## What About DRM?
+
+Helium includes Widevine support for streaming services:
+
+```gn
+enable_widevine=true
+```
+
+This is **enabled** because:
+- Many users need it for Netflix, Spotify, etc.
+- It's opt-in at runtime (only loads when needed)
+- Can be disabled through chrome://components
+- Doesn't compromise privacy when not in use
+
+<Tip>
+If you don't use DRM-protected content, you can disable Widevine in `chrome://components` to remove it entirely.
+</Tip>
+
+## Comparison: Helium vs Chrome
+
+| Feature | Chrome | Helium |
+|---------|--------|--------|
+| Safe Browsing | Enabled | Disabled |
+| Google Sync | Default | Removed |
+| Crash Reporting | Enabled | Disabled |
+| Usage Statistics | Enabled | Disabled |
+| Field Trials | Enabled | Disabled |
+| mDNS | Enabled | Disabled |
+| Hangouts Extension | Included | Removed |
+| Privacy Controls | Hidden | Prominent |
+
+## Verifying Privacy Settings
+
+You can verify Helium's privacy configuration:
+
+1. **Check build flags:** Look at `flags.gn` in the source
+2. **Monitor network:** Use Wireshark to confirm no unexpected connections
+3. **Review code:** All patches are in `patches/helium/` directories
+4. **Inspect settings:** Check `chrome://prefs` for privacy-related preferences
+
+<Note>
+Helium is open source (GPL-3.0). You can review every privacy-related change in the repository.
+</Note>
+
+## Further Reading
+
+- [Native Bangs](/features/native-bangs) - How the privacy-preserving bang system works
+- [uBlock Origin](/features/ublock-origin) - Built-in content blocking for privacy
+- [UI Customization](/features/ui-customization) - Interface changes that support privacy

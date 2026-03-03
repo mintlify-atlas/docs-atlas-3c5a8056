@@ -1,0 +1,538 @@
+---
+title: Testing Guidelines
+description: Comprehensive testing guidelines and utilities for ensuring Helium browser quality
+---
+
+## Overview
+
+Testing is critical for maintaining Helium's stability, performance, and privacy guarantees. This guide covers the testing utilities, validation scripts, and best practices for ensuring code quality.
+
+## Testing Philosophy
+
+<Card title="Core Testing Principles" icon="shield-check">
+  - **Privacy First** - Ensure no data leakage or tracking
+  - **Cross-Platform** - Test on Windows, macOS, and Linux
+  - **Regression Prevention** - Validate patches don't break existing functionality
+  - **Automated Validation** - Use provided scripts before submitting changes
+</Card>
+
+## Development Utilities
+
+Helium provides comprehensive testing utilities in the `devutils/` directory:
+
+### Validation Scripts
+
+<CardGroup cols={2}>
+  <Card title="validate_patches.py" icon="file-code">
+    Validates that all patches apply cleanly against the Chromium source tree
+  </Card>
+  <Card title="validate_config.py" icon="gear">
+    Runs sanity checks over all configuration files
+  </Card>
+  <Card title="check_patch_files.py" icon="magnifying-glass">
+    Verifies patch file integrity and series consistency
+  </Card>
+  <Card title="check_gn_flags.py" icon="flag">
+    Ensures GN flags are sorted and not duplicated
+  </Card>
+</CardGroup>
+
+## Running Tests
+
+### Complete Validation Suite
+
+Run all validation checks before submitting changes:
+
+```bash
+./devutils/validate_config.py
+```
+
+This comprehensive script checks:
+- All patches exist and are referenced
+- No duplicate patches in series
+- Patches are readable and properly formatted
+- GN flags in `flags.gn` are sorted and unique
+- `downloads.ini` has correct format and schema
+
+<Note>
+  Exit code 0 means no problems detected. Exit code 1 indicates warnings or errors.
+</Note>
+
+### Patch Validation
+
+<Tabs>
+  <Tab title="Remote Validation">
+    Validates patches against files downloaded from Google:
+    
+    ```bash
+    ./devutils/validate_patches.py --remote
+    ```
+    
+    **Features:**
+    - Downloads only required source files
+    - Validates against exact Chromium version
+    - No local source tree needed
+    
+    **Requirements:**
+    - Python `requests` module
+    - Internet connection
+    
+    **Options:**
+    ```bash
+    # Specify custom series file
+    ./devutils/validate_patches.py --remote \
+      --series patches/series \
+      --patches patches/
+    
+    # Enable verbose output for debugging
+    ./devutils/validate_patches.py --remote --verbose
+    ```
+  </Tab>
+  
+  <Tab title="Local Validation">
+    Validates patches against a local Chromium source tree:
+    
+    ```bash
+    ./devutils/validate_patches.py --local /path/to/chromium/src
+    ```
+    
+    <Warning>
+      The local source tree must be **unmodified**, otherwise validation results will not be accurate.
+    </Warning>
+    
+    **Benefits:**
+    - Faster than remote validation
+    - Works offline
+    - Useful for rapid iteration
+    
+    **Usage:**
+    ```bash
+    # Basic local validation
+    ./devutils/validate_patches.py --local ~/chromium/src
+    
+    # With custom patches directory
+    ./devutils/validate_patches.py --local ~/chromium/src \
+      --patches ./patches
+    ```
+  </Tab>
+  
+  <Tab title="Cache Remote Files">
+    Downloads and caches remote files for debugging:
+    
+    ```bash
+    ./devutils/validate_patches.py --cache-remote /path/to/cache
+    ```
+    
+    **Use Cases:**
+    - Debugging patch failures
+    - Offline development
+    - Performance optimization
+    
+    **Behavior:**
+    - Downloads all required source files
+    - Stores them in the specified directory
+    - Exits after caching (doesn't validate)
+    - Can be used with `--local` for subsequent validation
+  </Tab>
+</Tabs>
+
+### Patch File Checks
+
+Validate patch file integrity:
+
+```bash
+./devutils/check_patch_files.py
+```
+
+**Checks performed:**
+
+<Steps>
+  <Step title="Patch Readability">
+    Verifies all patches in the series file are:
+    - Present on disk
+    - Parseable as valid unified diff format
+    - Free of syntax errors
+  </Step>
+  
+  <Step title="Series Consistency">
+    Ensures:
+    - No duplicate entries in series file
+    - All patches are referenced exactly once
+  </Step>
+  
+  <Step title="Unused Patches">
+    Identifies patch files that exist but aren't referenced in series (excluding `.md` files).
+  </Step>
+</Steps>
+
+**Custom patches directory:**
+
+```bash
+./devutils/check_patch_files.py --patches /path/to/patches
+```
+
+### GN Flags Validation
+
+Verify GN build flags are properly formatted:
+
+```bash
+./devutils/check_gn_flags.py
+```
+
+**Validates:**
+- Flags are sorted alphabetically
+- No duplicate flag definitions
+- Proper flag syntax
+
+**Custom flags file:**
+
+```bash
+./devutils/check_gn_flags.py --flags-gn /path/to/flags.gn
+```
+
+## Python Code Quality
+
+Helium includes utilities for maintaining Python code quality:
+
+### Linting
+
+<CodeGroup>
+```bash DevUtils Linting
+# Lint development utilities
+./devutils/run_devutils_pylint.py
+```
+
+```bash Utils Linting
+# Lint utility scripts
+./devutils/run_utils_pylint.py
+```
+
+```bash Other Files
+# Lint other Python files
+./devutils/run_other_pylint.py
+```
+</CodeGroup>
+
+### Code Formatting
+
+Format code with YAPF (Yet Another Python Formatter):
+
+<CodeGroup>
+```bash DevUtils Formatting
+./devutils/run_devutils_yapf.sh
+```
+
+```bash Utils Formatting
+./devutils/run_utils_yapf.sh
+```
+
+```bash Other Files
+./devutils/run_other_yapf.sh
+```
+</CodeGroup>
+
+### Unit Tests
+
+Run Python unit tests:
+
+<CodeGroup>
+```bash DevUtils Tests
+./devutils/run_devutils_tests.sh
+```
+
+```bash Utils Tests
+./devutils/run_utils_tests.sh
+```
+</CodeGroup>
+
+**Test coverage:**
+- Patch validation logic
+- Domain substitution
+- Configuration parsing
+- File integrity checks
+
+## Pre-Commit Checklist
+
+Before committing changes, run this comprehensive checklist:
+
+<Steps>
+  <Step title="Validate all code">
+    ```bash
+    ./devutils/check_all_code.sh
+    ```
+    
+    Runs all linting, formatting, and testing utilities.
+  </Step>
+  
+  <Step title="Validate configuration">
+    ```bash
+    ./devutils/validate_config.py
+    ```
+    
+    Ensures all config files are valid.
+  </Step>
+  
+  <Step title="Validate patches">
+    ```bash
+    ./devutils/validate_patches.py --remote
+    ```
+    
+    Confirms patches apply cleanly.
+  </Step>
+  
+  <Step title="Build and test locally">
+    Build Helium with your changes and perform manual testing on your platform.
+  </Step>
+</Steps>
+
+## Platform-Specific Testing
+
+### Windows Testing
+
+<AccordionGroup>
+  <Accordion title="Build Testing">
+    - Verify builds complete without errors
+    - Test installer generation
+    - Validate file associations
+    - Check update mechanisms (not yet auto-update)
+  </Accordion>
+  
+  <Accordion title="Functionality Testing">
+    - Browser launch and stability
+    - Extensions (uBlock Origin, etc.)
+    - Privacy features
+    - UI rendering and responsiveness
+  </Accordion>
+</AccordionGroup>
+
+### macOS Testing
+
+<AccordionGroup>
+  <Accordion title="Build Testing">
+    - Universal binary (Intel + Apple Silicon)
+    - Code signing and notarization
+    - DMG packaging
+    - Auto-update functionality
+  </Accordion>
+  
+  <Accordion title="Functionality Testing">
+    - Native menu integration
+    - Keyboard shortcuts
+    - Touch Bar support (if applicable)
+    - macOS-specific privacy features
+  </Accordion>
+</AccordionGroup>
+
+### Linux Testing
+
+<AccordionGroup>
+  <Accordion title="Build Testing">
+    - AppImage generation
+    - Dependencies bundling
+    - Desktop integration
+    - Auto-update via AppImageUpdate
+  </Accordion>
+  
+  <Accordion title="Functionality Testing">
+    - Wayland and X11 compatibility
+    - System theme integration
+    - File picker integration
+    - Clipboard functionality
+  </Accordion>
+</AccordionGroup>
+
+## Debugging Test Failures
+
+### Verbose Output
+
+Enable detailed logging for debugging:
+
+```bash
+./devutils/validate_patches.py --remote --verbose
+```
+
+**Provides:**
+- Line-by-line patch application details
+- Exact mismatch locations
+- Context from source files
+- `patch --dry-run` output for failures
+
+### Common Test Failures
+
+<AccordionGroup>
+  <Accordion title="Patch doesn't apply cleanly">
+    **Symptoms:**
+    ```
+    Patch failed validation: ungoogled-chromium/some-patch.patch
+    Line 'old_code' does not match removal line 'new_code' from patch
+    ```
+    
+    **Solutions:**
+    1. Check Chromium version matches
+    2. Refresh patch against current source
+    3. Manually resolve conflicts
+    4. Re-run validation
+  </Accordion>
+  
+  <Accordion title="GN flags not sorted">
+    **Symptoms:**
+    ```
+    In GN flags flags.gn, "flag_b" should be sorted before "flag_a"
+    ```
+    
+    **Solution:**
+    Manually sort flags alphabetically in `flags.gn`
+  </Accordion>
+  
+  <Accordion title="Duplicate patch in series">
+    **Symptoms:**
+    ```
+    Patch appears more than once in series: some-patch.patch
+    ```
+    
+    **Solution:**
+    Remove duplicate entry from `patches/series`
+  </Accordion>
+  
+  <Accordion title="Unused patch detected">
+    **Symptoms:**
+    ```
+    Unused patch: ungoogled-chromium/old-patch.patch
+    ```
+    
+    **Solutions:**
+    - Add patch to series file if needed
+    - Remove patch file if obsolete
+    - Document reason if intentionally unused
+  </Accordion>
+  
+  <Accordion title="Python linting errors">
+    **Symptoms:**
+    ```
+    pylint: error: unrecognized arguments
+    ```
+    
+    **Solution:**
+    Auto-format and fix linting issues:
+    ```bash
+    ./devutils/run_devutils_yapf.sh
+    ./devutils/run_devutils_pylint.py
+    ```
+  </Accordion>
+</AccordionGroup>
+
+## Continuous Integration
+
+### Automated Testing
+
+When you submit a pull request:
+
+1. **Validation runs automatically**
+   - Patch validation
+   - Config validation
+   - Code linting
+   - Unit tests
+
+2. **Platform builds triggered**
+   - Windows build
+   - macOS build (Intel + ARM)
+   - Linux AppImage
+
+3. **Manual testing required**
+   - You must test locally before PR
+   - Indicate tested platforms in PR template
+
+### Local CI Simulation
+
+Simulate CI checks locally:
+
+```bash
+# Run all validation
+./devutils/check_all_code.sh
+./devutils/validate_config.py
+./devutils/validate_patches.py --remote
+
+# Check for warnings
+if [ $? -eq 0 ]; then
+  echo "✓ All checks passed"
+else
+  echo "✗ Some checks failed - review output above"
+fi
+```
+
+## Manual Testing Guidelines
+
+### Privacy Testing
+
+<Steps>
+  <Step title="Network traffic analysis">
+    Use tools like Wireshark or mitmproxy to verify:
+    - No unexpected Google domains
+    - No telemetry or analytics
+    - No tracking beacons
+  </Step>
+  
+  <Step title="Storage inspection">
+    Check for:
+    - No unexpected cookies
+    - No tracking tokens in localStorage
+    - Proper incognito mode isolation
+  </Step>
+  
+  <Step title="Feature verification">
+    Test that privacy features work:
+    - uBlock Origin functionality
+    - Privacy flags effectiveness
+    - Referrer customization
+    - WebRTC leak prevention
+  </Step>
+</Steps>
+
+### Functional Testing
+
+- **Basic browsing** - Load various websites
+- **Extensions** - Install and use extensions
+- **Downloads** - Test download functionality
+- **Forms** - Test autofill and form submission
+- **Media** - Play video and audio
+- **PDF viewer** - Open and view PDFs
+- **Settings** - Navigate and modify settings
+
+### Performance Testing
+
+- **Startup time** - Measure cold and warm starts
+- **Memory usage** - Monitor with multiple tabs
+- **CPU usage** - Check during heavy workloads
+- **Responsiveness** - Test UI lag and jank
+
+## Reporting Test Results
+
+When reporting test results in PRs:
+
+```markdown
+## Test Results
+
+### Automated Tests
+- [x] validate_config.py - PASSED
+- [x] validate_patches.py --remote - PASSED
+- [x] check_all_code.sh - PASSED
+
+### Manual Testing
+Tested on:
+- [x] macOS 14.2 (Apple Silicon)
+- [ ] Windows 11
+- [ ] Linux (Ubuntu 22.04)
+
+### Functionality
+- [x] Privacy features working
+- [x] No regressions found
+- [x] Performance acceptable
+- [x] UI renders correctly
+
+### Issues Found
+- None
+```
+
+<Note>
+  Comprehensive testing helps maintain Helium's quality and privacy guarantees. Always test thoroughly before submitting changes.
+</Note>

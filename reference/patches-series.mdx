@@ -1,0 +1,439 @@
+---
+title: "patches/series Reference"
+description: "Patch application order and organization for Helium"
+---
+
+## Overview
+
+The `patches/series` file defines the order in which patches are applied to the Chromium source code. This is critical because patches must be applied in the correct sequence to avoid conflicts and ensure proper functionality.
+
+<Warning>
+  The order of patches matters. Changing the order can cause patch application failures or runtime issues.
+</Warning>
+
+## File Format
+
+The file is a simple text file with one patch path per line:
+
+```
+path/to/patch.patch
+another/patch.patch
+# Comment lines start with #
+
+# Blank lines are ignored
+yet/another.patch
+```
+
+- Each line specifies a patch file relative to the `patches/` directory
+- Comments start with `#` and are ignored
+- Blank lines are ignored and can be used for organization
+
+## Patch Organization
+
+Helium's patches are organized into several categories:
+
+### Upstream Fixes
+
+<CodeGroup>
+```text upstream-fixes/
+upstream-fixes/missing-dependencies.patch
+upstream-fixes/vertical/r1568708-fix-crash-during-collapsed-tabgroup-drag.patch
+upstream-fixes/vertical/r1568929-animate-cross-collection-operations.patch
+# ... 46 more vertical tab patches
+```
+</CodeGroup>
+
+Backports of fixes from newer Chromium versions, particularly for vertical tab functionality. These patches:
+- Fix crashes and rendering issues
+- Improve drag-and-drop behavior
+- Enhance performance and animations
+- Are prefixed with revision numbers (e.g., `r1568708`)
+
+<Note>
+  Vertical tab patches are upstream improvements backported to ensure stable tab management.
+</Note>
+
+### Privacy Patchsets
+
+Patches from privacy-focused Chromium forks:
+
+<Tabs>
+  <Tab title="Inox">
+    ```text
+    inox-patchset/fix-building-without-safebrowsing.patch
+    inox-patchset/disable-autofill-download-manager.patch
+    inox-patchset/disable-update-pings.patch
+    inox-patchset/disable-rlz.patch
+    inox-patchset/modify-default-prefs.patch
+    inox-patchset/disable-battery-status-service.patch
+    ```
+    
+    Removes telemetry, RLZ tracking, and privacy-invasive features.
+  </Tab>
+  
+  <Tab title="Iridium">
+    ```text
+    iridium-browser/safe-browsing-disable-reporting.patch
+    iridium-browser/all-add-trk-prefixes-to-possibly-evil-connections.patch
+    iridium-browser/updater-disable-auto-update.patch
+    iridium-browser/browser-disable-profile-auto-import-on-first-run.patch
+    ```
+    
+    Adds "trk:" prefixes to tracking connections and disables auto-updates.
+  </Tab>
+  
+  <Tab title="ungoogled-chromium">
+    ```text
+    ungoogled-chromium/disable-crash-reporter.patch
+    ungoogled-chromium/disable-google-host-detection.patch
+    ungoogled-chromium/disable-gcm.patch
+    ungoogled-chromium/disable-gaia.patch
+    ungoogled-chromium/block-trk-and-subdomains.patch
+    # ... 58 more patches
+    ```
+    
+    Largest privacy patchset. Removes Google dependencies, adds privacy flags, and enhances customization.
+  </Tab>
+  
+  <Tab title="Bromite">
+    ```text
+    bromite/disable-fetching-field-trials.patch
+    bromite/fingerprinting-flags-client-rects-and-measuretext.patch
+    bromite/flag-max-connections-per-host.patch
+    ```
+    
+    Adds fingerprinting protection and connection limits.
+  </Tab>
+</Tabs>
+
+### Brave Patches
+
+<CodeGroup>
+```text brave/
+brave/chrome-importer-files.patch
+brave/custom-importer.patch
+brave/fix-component-content-settings-store.patch
+brave/tab-cycling-mru-impl.patch
+```
+</CodeGroup>
+
+Imports functionality from Brave browser:
+- Custom profile importer
+- MRU (Most Recently Used) tab cycling
+- Component content settings fixes
+
+### Debian Patches
+
+<CodeGroup>
+```text debian/
+debian/disable-google-api-warning.patch
+```
+</CodeGroup>
+
+Disables warning messages about missing Google API keys.
+
+### Helium Core Patches
+
+Helium's main functionality patches, organized by category:
+
+<AccordionGroup>
+  <Accordion title="Core Features">
+    ```text
+    helium/core/add-zen-importer.patch
+    helium/core/disable-unsupported-importers.patch
+    helium/core/services-prefs.patch
+    helium/core/override-chrome-protocol.patch
+    helium/core/onboarding-page.patch
+    helium/core/change-chromium-branding.patch
+    # ... more core patches
+    ```
+    
+    - Zen Browser profile importer
+    - Onboarding page integration
+    - Branding changes
+    - Native messaging host scanning
+  </Accordion>
+  
+  <Accordion title="Search Engine">
+    ```text
+    helium/core/search/restore-google.patch
+    helium/core/search/engine-defaults.patch
+    helium/core/search/fix-search-engine-icons.patch
+    helium/core/search/force-eu-search-features.patch
+    helium/core/search/omnibox-default-search-icon.patch
+    ```
+    
+    Search engine configuration and icon handling.
+  </Accordion>
+  
+  <Accordion title="Privacy Features">
+    ```text
+    helium/core/noise/core.patch
+    helium/core/noise/canvas.patch
+    helium/core/noise/audio.patch
+    helium/core/noise/hardware-concurrency.patch
+    helium/core/reduce-accept-language-headers.patch
+    helium/core/disable-ad-topics-and-etc.patch
+    ```
+    
+    Fingerprinting protection through canvas/audio noise and reduced headers.
+  </Accordion>
+  
+  <Accordion title="uBlock Origin">
+    ```text
+    helium/core/ublock-setup-sources.patch
+    helium/core/ublock-install-as-component.patch
+    helium/core/ublock-reconfigure-defaults.patch
+    helium/core/ublock-helium-services.patch
+    ```
+    
+    Integrates uBlock Origin as a built-in component extension.
+  </Accordion>
+  
+  <Accordion title="Flags & Preferences">
+    ```text
+    helium/core/flags-setup.patch
+    helium/core/add-low-power-framerate-flag.patch
+    helium/core/add-update-channel-flag.patch
+    helium/core/add-updater-preference.patch
+    helium/core/add-disable-ech-flag.patch
+    ```
+    
+    Custom chrome://flags entries and preferences.
+  </Accordion>
+  
+  <Accordion title="Behavioral Changes">
+    ```text
+    helium/core/keyboard-shortcuts.patch
+    helium/core/update-default-browser-prefs.patch
+    helium/core/add-native-bangs.patch
+    helium/core/prefer-https-by-default.patch
+    helium/core/memory-saving-by-default.patch
+    helium/core/enable-parallel-downloading.patch
+    helium/core/infinite-tab-freezing.patch
+    ```
+    
+    Changes default behavior: HTTPS by default, memory saving, parallel downloads, etc.
+  </Accordion>
+  
+  <Accordion title="Component Management">
+    ```text
+    helium/core/add-component-l10n-support.patch
+    helium/core/add-component-managed-schema-support.patch
+    helium/core/component-updates.patch
+    helium/core/fixups-component-setup.patch
+    ```
+    
+    Enhanced component extension system with localization and managed policies.
+  </Accordion>
+</AccordionGroup>
+
+### Helium Settings
+
+<CodeGroup>
+```text helium/settings/
+helium/settings/setup-behavior-settings-page.patch
+helium/settings/settings-page-icons.patch
+helium/settings/remove-autofill.patch
+helium/settings/privacy-page-tweaks.patch
+helium/settings/about-page-tweaks.patch
+# ... 18 settings patches
+```
+</CodeGroup>
+
+Customizes the Settings UI:
+- Removes unwanted sections (autofill, Safety Hub, translate)
+- Reorders menu items
+- Updates page icons and text
+- Adds custom options
+
+### Helium HOP (Helium Onboarding Page)
+
+<CodeGroup>
+```text helium/hop/
+helium/hop/setup.patch
+helium/hop/disable-password-manager.patch
+```
+</CodeGroup>
+
+Configures the first-run onboarding experience.
+
+### Helium UI
+
+Extensive UI customization patches:
+
+<Tabs>
+  <Tab title="Core UI">
+    ```text
+    helium/ui/layout-constants.patch
+    helium/ui/layout-provider.patch
+    helium/ui/tabs.patch
+    helium/ui/toolbar.patch
+    helium/ui/omnibox.patch
+    helium/ui/app-menu-style.patch
+    ```
+    
+    Core layout, toolbar, tabs, and menu styling.
+  </Tab>
+  
+  <Tab title="Components">
+    ```text
+    helium/ui/location-bar.patch
+    helium/ui/side-panel.patch
+    helium/ui/find-bar.patch
+    helium/ui/status-bubble.patch
+    helium/ui/pdf-viewer.patch
+    ```
+    
+    Individual component styling and behavior.
+  </Tab>
+  
+  <Tab title="Theming">
+    ```text
+    helium/ui/helium-color-scheme.patch
+    helium/ui/set-gray-as-default-theme.patch
+    helium/ui/helium-logo-icons.patch
+    helium/ui/top-container-background.patch
+    helium/ui/enable-fluent-scrollbar.patch
+    ```
+    
+    Color scheme, icons, and visual theming.
+  </Tab>
+  
+  <Tab title="Layout Modes">
+    ```text
+    helium/ui/layout/core.patch
+    helium/ui/layout/settings.patch
+    helium/ui/layout/context-menu.patch
+    helium/ui/layout/compact.patch
+    helium/ui/layout/vertical.patch
+    ```
+    
+    Different layout modes including vertical tabs.
+  </Tab>
+  
+  <Tab title="Cleanup">
+    ```text
+    helium/ui/remove-toolbar-corners.patch
+    helium/ui/remove-dead-toolbar-actions.patch
+    helium/ui/remove-layout-separators.patch
+    helium/ui/remove-reading-list-from-app-menu.patch
+    helium/ui/clean-context-menu.patch
+    ```
+    
+    Removes unwanted UI elements and cleans up menus.
+  </Tab>
+</Tabs>
+
+## Patch Statistics
+
+<CardGroup cols={2}>
+  <Card title="Total Patches" icon="file-code">
+    **327 patches** applied in sequence
+  </Card>
+  
+  <Card title="Largest Category" icon="layer-group">
+    **Helium UI** with 78 patches
+  </Card>
+  
+  <Card title="Privacy Patches" icon="shield">
+    **69 patches** from ungoogled-chromium, Inox, Iridium, Bromite
+  </Card>
+  
+  <Card title="Upstream Fixes" icon="wrench">
+    **47 patches** backported from newer Chromium
+  </Card>
+</CardGroup>
+
+## Patch Naming Convention
+
+Patches follow these naming patterns:
+
+- **Upstream**: `rREVISION-description.patch` (e.g., `r1568708-fix-crash.patch`)
+- **Feature**: `add-feature-name.patch`
+- **Removal**: `remove-feature-name.patch` or `disable-feature-name.patch`
+- **Fix**: `fix-issue-description.patch`
+- **UI**: `component-name.patch` (e.g., `toolbar.patch`, `omnibox.patch`)
+
+## Applying Patches
+
+Patches are typically applied using the `patch` or `git apply` command:
+
+<CodeGroup>
+```bash patch command
+# Apply all patches in order
+while read -r patch; do
+  # Skip comments and blank lines
+  [[ "$patch" =~ ^#.*$ || -z "$patch" ]] && continue
+  
+  patch -p1 < "patches/$patch"
+done < patches/series
+```
+
+```bash git apply
+# Apply all patches with git
+while read -r patch; do
+  [[ "$patch" =~ ^#.*$ || -z "$patch" ]] && continue
+  
+  git apply "patches/$patch"
+done < patches/series
+```
+</CodeGroup>
+
+## Maintaining Patches
+
+<Steps>
+  <Step title="Create a new patch">
+    Make changes to the Chromium source and create a patch:
+    ```bash
+    git diff > patches/helium/core/my-new-feature.patch
+    ```
+  </Step>
+  
+  <Step title="Add to series file">
+    Insert the patch path in the appropriate location in `patches/series`. Consider dependencies:
+    - Place after patches it depends on
+    - Place before patches that depend on it
+  </Step>
+  
+  <Step title="Test patch application">
+    Apply all patches from a clean Chromium source to ensure no conflicts.
+  </Step>
+  
+  <Step title="Document the patch">
+    Add a descriptive comment above the patch in `series` if needed:
+    ```text
+    # Adds support for custom protocol handlers
+    helium/core/custom-protocol-handlers.patch
+    ```
+  </Step>
+</Steps>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Patch fails to apply">
+    - Check if the patch was created against the correct Chromium version
+    - Verify the patch is in unified diff format
+    - Look for line ending issues (CRLF vs LF)
+    - Check if a previous patch modified the same code
+  </Accordion>
+  
+  <Accordion title="Patch applies but build fails">
+    - The patch may be outdated for the current Chromium version
+    - Check for missing dependencies or header files
+    - Review the patch for syntax errors or incomplete changes
+  </Accordion>
+  
+  <Accordion title="Runtime issues after patching">
+    - Some patches may conflict at runtime even if they apply cleanly
+    - Try applying patches in smaller groups to isolate the issue
+    - Check patch order - some patches must be applied in sequence
+  </Accordion>
+</AccordionGroup>
+
+## Related Configuration
+
+- [flags.gn](/reference/flags-gn) - Build flags that work with patches
+- [deps.ini](/reference/deps-ini) - Dependencies that may be affected by patches
+- [downloads.ini](/reference/downloads-ini) - Source code that patches are applied to

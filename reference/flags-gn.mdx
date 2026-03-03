@@ -1,0 +1,156 @@
+---
+title: "flags.gn Reference"
+description: "Build configuration flags for Helium browser"
+---
+
+## Overview
+
+The `flags.gn` file contains GN (Generate Ninja) build arguments that control how Helium is compiled. These flags disable unwanted Chromium features, configure API keys, and optimize the build for privacy.
+
+<Note>
+  This file is located at the root of the source directory and is read during the build process.
+</Note>
+
+## File Format
+
+The file uses GN's simple key-value format:
+
+```gn
+flag_name=value
+```
+
+- Boolean values: `true` or `false`
+- String values: `"string content"` (quoted)
+- Numeric values: `0`, `1`, `2`, etc.
+
+## Build Flags
+
+### Privacy & Telemetry
+
+<ParamField path="enable_reporting" type="boolean" default="false">
+  Disables Chromium's crash and error reporting system. Set to `false` to prevent any telemetry data from being sent to Google.
+</ParamField>
+
+<ParamField path="enable_remoting" type="boolean" default="false">
+  Disables Chrome Remote Desktop functionality. Set to `false` to remove this feature entirely from the build.
+</ParamField>
+
+<ParamField path="disable_fieldtrial_testing_config" type="boolean" default="true">
+  Disables Google's A/B testing framework (field trials). Set to `true` to prevent automatic participation in experiments.
+</ParamField>
+
+### Network Services
+
+<ParamField path="enable_mdns" type="boolean" default="false">
+  Disables multicast DNS (mDNS) support. Set to `false` to prevent local network device discovery.
+</ParamField>
+
+<ParamField path="enable_service_discovery" type="boolean" default="false">
+  Disables network service discovery features. Set to `false` to remove SSDP and similar protocols.
+</ParamField>
+
+<ParamField path="enable_hangout_services_extension" type="boolean" default="false">
+  Disables the Google Hangouts services extension. Set to `false` to remove this Google-specific feature.
+</ParamField>
+
+### Security & DRM
+
+<ParamField path="enable_widevine" type="boolean" default="true">
+  Enables Widevine DRM support for protected content playback. Set to `true` to allow streaming services like Netflix.
+</ParamField>
+
+<ParamField path="safe_browsing_mode" type="integer" default="0">
+  Controls Safe Browsing functionality:
+  - `0`: Completely disabled
+  - `1`: Standard protection
+  - `2`: Enhanced protection
+  
+  Helium disables this to prevent phishing/malware URL checks from being sent to Google.
+</ParamField>
+
+### API Keys
+
+<ParamField path="google_api_key" type="string" default='""'>
+  Google API key for various services. Set to empty string `""` to disable Google API features.
+</ParamField>
+
+<ParamField path="google_default_client_id" type="string" default='""'>
+  OAuth 2.0 client ID for Google services. Set to empty string to disable sync and account features.
+</ParamField>
+
+<ParamField path="google_default_client_secret" type="string" default='""'>
+  OAuth 2.0 client secret for Google services. Set to empty string to disable authentication.
+</ParamField>
+
+<ParamField path="use_official_google_api_keys" type="boolean" default="false">
+  Whether to use official Google API keys. Set to `false` for privacy-focused builds.
+</ParamField>
+
+### Build Optimization
+
+<ParamField path="clang_use_chrome_plugins" type="boolean" default="false">
+  Disables Chrome-specific Clang plugins during compilation. Can speed up builds but may miss some warnings.
+</ParamField>
+
+<ParamField path="treat_warnings_as_errors" type="boolean" default="false">
+  Controls whether compiler warnings cause build failures. Set to `false` for easier development.
+</ParamField>
+
+<ParamField path="exclude_unwind_tables" type="boolean" default="true">
+  Excludes unwind tables from the binary, reducing size. Set to `true` unless you need detailed crash reports.
+</ParamField>
+
+<ParamField path="chrome_pgo_phase" type="integer" default="0">
+  Profile-Guided Optimization phase:
+  - `0`: Disabled
+  - `1`: Instrumentation phase
+  - `2`: Optimization phase
+</ParamField>
+
+### Machine Learning
+
+<ParamField path="build_with_tflite_lib" type="boolean" default="false">
+  Disables TensorFlow Lite library inclusion. Set to `false` to reduce binary size and remove ML features.
+</ParamField>
+
+### Version Control
+
+<ParamField path="use_unofficial_version_number" type="boolean" default="false">
+  Whether to use unofficial version numbering. Typically `false` to maintain compatibility with extension APIs.
+</ParamField>
+
+## Example Configuration
+
+<CodeGroup>
+```gn flags.gn
+# Privacy-focused configuration
+enable_reporting=false
+enable_remoting=false
+safe_browsing_mode=0
+google_api_key=""
+
+# Keep DRM for streaming
+enable_widevine=true
+
+# Optimize build
+exclude_unwind_tables=true
+treat_warnings_as_errors=false
+```
+
+```gn Development Build
+# Development configuration
+treat_warnings_as_errors=true
+chrome_pgo_phase=0
+clang_use_chrome_plugins=true
+
+# Privacy settings
+enable_reporting=false
+safe_browsing_mode=0
+```
+</CodeGroup>
+
+## Related Configuration
+
+- [deps.ini](/reference/deps-ini) - Additional dependencies downloaded after cloning
+- [downloads.ini](/reference/downloads-ini) - Chromium source archive configuration
+- [patches/series](/reference/patches-series) - Patch application order

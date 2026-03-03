@@ -1,0 +1,520 @@
+---
+title: Native Bangs
+description: Use DuckDuckGo-style !bang shortcuts natively in Helium's omnibox for instant searching across hundreds of websites
+---
+
+Helium includes a native implementation of DuckDuckGo's !bang shortcuts, allowing you to search any website directly from the omnibox without visiting DuckDuckGo first.
+
+## What Are Bangs?
+
+Bangs are shortcuts that let you search websites directly. Type `!w` to search Wikipedia, `!gh` to search GitHub, or `!yt` to search YouTube - all from your address bar.
+
+<CardGroup cols={2}>
+  <Card title="Fast Searching" icon="bolt">
+    Search hundreds of sites instantly without visiting them first
+  </Card>
+  
+  <Card title="Native Integration" icon="code">
+    Built into Chromium's search engine system, not a web service
+  </Card>
+  
+  <Card title="Privacy-Preserving" icon="shield">
+    Queries go directly to the target site, not through DuckDuckGo
+  </Card>
+  
+  <Card title="Always Updated" icon="arrows-rotate">
+    Bang list automatically syncs from Helium services
+  </Card>
+</CardGroup>
+
+## Quick Start
+
+Type a bang keyword followed by your search query:
+
+```
+!w helium browser         → Search Wikipedia for "helium browser"
+!gh chromium patches      → Search GitHub for "chromium patches"
+!yt cat videos            → Search YouTube for "cat videos"
+!a mechanical keyboard    → Search Amazon for "mechanical keyboard"
+```
+
+<Tip>
+You can also put the bang at the end: `helium browser !w` - just press Enter to activate it!
+</Tip>
+
+## How It Works
+
+Helium implements bangs natively at the Chromium engine level:
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         Omnibox Input                       │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+          ┌──────────────────────┐
+          │ AutocompleteInput    │  ← Parses !bang keywords
+          └──────────┬───────────┘
+                     │
+                     ▼
+        ┌────────────────────────┐
+        │ TemplateURLService     │  ← Manages search engines
+        └────────┬───────────────┘
+                 │
+                 ▼
+    ┌────────────────────────────┐
+    │ BangManager                │  ← Loads & caches bangs
+    └────────┬───────────────────┘
+             │
+             ▼
+┌────────────────────────────────┐
+│ Helium Services API            │  ← /bangs.json endpoint
+└────────────────────────────────┘
+```
+
+### Core Components
+
+<Steps>
+  <Step title="BangManager">
+    Singleton class that fetches, caches, and manages the bang list.
+    
+    **Location:** `components/search_engines/template_url_bang_manager.cc`
+  </Step>
+  
+  <Step title="AutocompleteInput">
+    Extended to recognize !bang syntax at the beginning or end of queries.
+    
+    **Location:** `components/omnibox/browser/autocomplete_input.cc`
+  </Step>
+  
+  <Step title="TemplateURLService">
+    Converts bangs into TemplateURL objects that Chromium's search system understands.
+    
+    **Location:** `components/search_engines/template_url_service.cc`
+  </Step>
+</Steps>
+
+## Implementation Details
+
+### Bang Data Structure
+
+Each bang is represented by a simple struct:
+
+```cpp
+struct Bang {
+    size_t id;              // Unique identifier
+    std::string name;       // Human-readable name (e.g., "Wikipedia")
+    std::string bang;       // Bang trigger (e.g., "w")
+    std::string template_url;  // URL with {searchTerms} placeholder
+};
+```
+
+### Loading Bangs
+
+Bangs are loaded when the browser starts:
+
+```cpp
+void TemplateURLService::LoadBangs() {
+  VLOG(2) << "LoadBangs() called";
+  bang_manager_->LoadBangs(url_loader_factory_, prefs_.get(),
+    base::BindOnce(&TemplateURLService::BangsLoadedCallback, 
+                   base::Unretained(this)));
+}
+```
+
+<Note>
+If Helium Services are disabled or the network is unavailable, bangs use cached data from the previous fetch.
+</Note>
+
+### Network Request
+
+The bang list is fetched from Helium services:
+
+```cpp
+void BangManager::DoStartFileFetch(
+    scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory,
+    PrefService& prefs) {
+    auto request = std::make_unique<network::ResourceRequest>();
+    request->url = helium::GetServicesBaseURL(prefs).Resolve(kBangsPrefix);
+    
+    // Only fetch if user has enabled bang updates
+    request->load_flags = helium::ShouldFetchBangs(prefs)
+                            ? net::LOAD_NORMAL
+                            : net::LOAD_ONLY_FROM_CACHE;
+    
+    request->credentials_mode = network::mojom::CredentialsMode::kOmit;
+    request->headers.SetHeader("Accept", "application/json");
+}
+```
+
+**Key privacy features:**
+- No credentials sent (`kOmit`)
+- Respects user preference via `ShouldFetchBangs()`
+- Falls back to cache if network is disabled
+- 30-second timeout with 3 retries
+
+### JSON Format
+
+The bang list is served as JSON:
+
+```json
+[
+  {
+    "s": "Wikipedia",
+    "ts": ["w", "wiki"],
+    "u": "https://en.wikipedia.org/wiki/Special:Search?search={searchTerms}",
+    "sc": "other"
+  },
+  {
+    "s": "GitHub",
+    "ts": ["gh", "github"],
+    "u": "https://github.com/search?q={searchTerms}"
+  }
+]
+```
+
+**Fields:**
+- `s` - Site name
+- `ts` - Trigger strings (array)
+- `u` - URL template with `{searchTerms}` placeholder
+- `sc` - Subcategory (optional, e.g., "ai")
+
+### Parsing Logic
+
+Bangs are parsed from JSON and converted to TemplateURLData:
+
+```cpp
+TemplateURLData TemplateURLDataFromBang(const Bangs::Bang& bang) {
+  TemplateURLData turl;
+  turl.SetShortName(base::UTF8ToUTF16(bang.name));
+  turl.SetKeyword(u"!" + base::UTF8ToUTF16(bang.bang));  // Add ! prefix
+  turl.SetURL(bang.template_url);
+  
+  // Generate favicon URL from base domain
+  GURL favicon_url = GURL(bang.template_url).GetWithEmptyPath();
+  favicon_url.path() = "/favicon.ico";
+  turl.favicon_url = std::move(favicon_url);
+  
+  turl.bang_id = 1 + bang.id;  // Mark as bang with ID
+  turl.safe_for_autoreplace = false;  // Don't auto-replace user engines
+  turl.GenerateSyncGUID();
+  turl.is_active = TemplateURLData::ActiveStatus::kTrue;
+  
+  return turl;
+}
+```
+
+<Tip>
+Bangs are marked with `bang_id > 0` so they can be identified and managed separately from regular search engines.
+</Tip>
+
+## Omnibox Integration
+
+### Keyword Detection
+
+Helium extends `AutocompleteInput` to recognize bangs:
+
+```cpp
+// Featured keyword mode now includes !
+AutocompleteInput::GetFeaturedKeywordMode(std::u16string_view text) {
+-  if (text == u"@")
++  if (text == u"@" || text == u"!")
+      return FeaturedKeywordMode::kExact;
+-  if (text.starts_with(u'@'))
++  if (text.starts_with(u'@') || text.starts_with(u'!'))
+      return FeaturedKeywordMode::kPrefix;
+  return FeaturedKeywordMode::kFalse;
+}
+```
+
+This makes `!` triggers work just like Chrome's `@` search shortcuts.
+
+### Trailing Bang Support
+
+Uniquely, Helium supports bangs at the end of queries:
+
+```cpp
+const size_t first_exclamation(input.find_first_of('!'));
+if (first_exclamation != std::u16string::npos && first_exclamation != 0) {
+  bool might_be_bang = input_view.substr(first_exclamation - 1)
+                                .find_first_of(base::kWhitespaceUTF16) == 0;
+  
+  if (might_be_bang) {
+    auto remaining_str = std::u16string(input_view.substr(0, first_exclamation));
+    std::u16string_view bang = input_view.substr(first_exclamation);
+    
+    // Extract bang and reorder query
+    // ...
+    
+    return std::u16string(bang);
+  }
+}
+```
+
+This allows natural typing: `search query !site` → searches "search query" on site.
+
+### Return Key Activation
+
+Pressing Enter when a trailing bang is detected activates it:
+
+```cpp
+void OmniboxViewViews::HandleKeyEvent(views::Textfield* sender,
+                                     const ui::KeyEvent& event) {
+  // ...
+  if (controller()->IsPopupOpen() && !control) {
+    // Accept trailing bang before opening selection
++   controller()->edit_model()->MaybeAcceptTrailingBang();
+    controller()->edit_model()->OpenSelection(...);
+  }
+}
+```
+
+```cpp
+void OmniboxEditModel::MaybeAcceptTrailingBang() {
+  if (!HasTrailingBangKeyword()) {
+    return;
+  }
+  
+  AcceptKeyword(OmniboxEventProto::RETURN_BANG);
+  
+  // Find matching autocomplete entry
+  const AutocompleteResult& result = autocomplete_controller()->result();
+  for (size_t i = 0; i < result.size(); i++) {
+    const AutocompleteMatch& match = result.match_at(i);
+    if (input_.text() == match.fill_into_edit) {
+      SetPopupSelection(OmniboxPopupSelection(i));
+      return;
+    }
+  }
+}
+```
+
+<Note>
+This creates a metric `OmniboxEventProto::RETURN_BANG` to track trailing bang usage.
+</Note>
+
+## Bang Categories
+
+Bangs can be categorized for better organization:
+
+```cpp
+enum BangCategory {
+    BANG_CATEGORY_OTHER = 0,
+    BANG_CATEGORY_AI,
+};
+
+BangCategory GetCategoryFromJSONObject(std::string_view sc) const {
+    if (sc == "ai") {
+        return BANG_CATEGORY_AI;
+    }
+    return BANG_CATEGORY_OTHER;
+}
+```
+
+This allows UI filtering or different handling for specific bang types (like AI search engines).
+
+## Privacy Considerations
+
+### No Third-Party Intermediary
+
+Unlike DuckDuckGo bangs, Helium's implementation is **direct**:
+
+```
+DuckDuckGo: You → DDG → Target Site
+Helium:     You → Target Site
+```
+
+Your search query never touches Helium servers or DuckDuckGo.
+
+### Opt-Out Available
+
+Bangs can be completely disabled:
+
+```
+Settings > Privacy > Helium Services > Allow downloading the !bangs list
+```
+
+When disabled:
+- No bang list fetched
+- Existing bangs remain functional (from cache)
+- No network requests made
+
+### Preference Integration
+
+```cpp
+// Register preference
+registry->RegisterBooleanPref(prefs::kHeliumBangsEnabled, true);
+
+// Check before fetching
+bool ShouldFetchBangs(const PrefService& prefs) {
+    return ShouldAccessServices(prefs) &&
+            prefs.GetBoolean(prefs::kHeliumBangsEnabled);
+}
+```
+
+## Hidden from Lists
+
+Bangs don't clutter the search engine management UI:
+
+```cpp
+bool TemplateURLService::HiddenFromLists(const TemplateURL* t_url) const {
++  if (t_url->bang_id()) {
++    return true;  // Hide bangs from chrome://settings/searchEngines
++  }
+  // ...
+}
+```
+
+They're available for use but don't appear in the search engine picker.
+
+## Conflict Resolution
+
+Bangs play nicely with custom search engines:
+
+```cpp
+bool TemplateURL::IsBetterThanConflictingEngine(const TemplateURL* engine) {
+  return std::tuple(
+      // ... other criteria
++     // Favor bangs over other auto-generated engines
++     engine->bang_id() > 0,
+      // Favor prepopulated engines
+      engine->prepopulate_id() > 0,
+      // ...
+  );
+}
+```
+
+**Priority order:**
+1. User-created engines
+2. Bangs
+3. Prepopulated engines
+4. Auto-generated engines
+
+## Example Bangs
+
+Common bangs you might use:
+
+| Bang | Site | Example |
+|------|------|----------|
+| `!w` | Wikipedia | `!w rust programming` |
+| `!gh` | GitHub | `!gh chromium` |
+| `!so` | Stack Overflow | `!so async javascript` |
+| `!yt` | YouTube | `!yt music` |
+| `!a` | Amazon | `!a wireless mouse` |
+| `!r` | Reddit | `!r programming` |
+| `!maps` | Google Maps | `!maps seattle` |
+| `!imdb` | IMDB | `!imdb inception` |
+
+<Tip>
+There are hundreds of bangs available. Try typing `!` in the omnibox to see suggestions!
+</Tip>
+
+## Advanced Usage
+
+### Multiple Triggers
+
+Many sites have multiple bang aliases:
+
+```json
+{
+  "s": "Wikipedia",
+  "ts": ["w", "wiki", "wikipedia"],
+  "u": "https://en.wikipedia.org/wiki/Special:Search?search={searchTerms}"
+}
+```
+
+You can use `!w`, `!wiki`, or `!wikipedia` - they all work.
+
+### Special Characters
+
+Bang searches properly encode special characters:
+
+```
+!w C++ programming  → Encodes + to %2B
+!gh user/repo       → Preserves / in query
+```
+
+## Settings UI
+
+Bangs have a dedicated toggle in Settings:
+
+```html
+<settings-toggle-button id="bangToggleButton"
+    pref="{{prefs.helium.services.bangs}}"
+    label="$i18n{heliumBangsToggle}"
+    sub-label="$i18n{heliumBangsToggleDescription}">
+</settings-toggle-button>
+```
+
+**Text:**
+- **Label:** "Allow downloading the !bangs list"
+- **Description:** "Helium will fetch a list of bangs that help you browse the Internet faster, such as !w or !gh. When disabled, bangs will not work."
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Bangs not working">
+    **Check:**
+    1. Settings > Privacy > Helium Services > Bangs is enabled
+    2. You're connected to the internet (for initial fetch)
+    3. Type `!` and wait for suggestions
+    
+    **Still not working?**
+    - Check `chrome://settings/searchEngines` - bangs should be hidden but active
+    - Restart the browser to trigger a fresh bang load
+  </Accordion>
+  
+  <Accordion title="Bang conflicts with custom search engine">
+    Custom search engines take priority. If you've created a keyword `!w`, it will override the Wikipedia bang.
+    
+    **Solution:** Delete your custom engine or use a different keyword.
+  </Accordion>
+  
+  <Accordion title="Trailing bangs not activating">
+    Make sure you:
+    1. Have a space before the bang: `query !bang` ✓ not `query!bang` ✗
+    2. Press Enter (don't click)
+    3. Have the bang at the very end of the query
+  </Accordion>
+</AccordionGroup>
+
+## Performance
+
+<CardGroup cols={3}>
+  <Card title="<100ms" icon="clock">
+    Bang lookup is instant - no network latency
+  </Card>
+  
+  <Card title="~5MB" icon="database">
+    Complete bang list is about 5MB of JSON
+  </Card>
+  
+  <Card title="In-Memory" icon="memory">
+    Bangs are cached in memory for immediate access
+  </Card>
+</CardGroup>
+
+## Future Enhancements
+
+Possible future improvements:
+
+- **Custom Bangs:** Let users add their own bang shortcuts
+- **Bang Discovery:** Better UI for discovering available bangs
+- **Bang History:** Show most-used bangs first
+- **Local Bang List:** Ship a default list with the browser
+
+## Source Code Reference
+
+Key files:
+
+- `patches/helium/core/add-native-bangs.patch` - Complete implementation
+- `components/search_engines/template_url_bang_manager.h` - Bang manager header
+- `components/search_engines/template_url_bang_manager.cc` - Bang manager implementation
+- `components/omnibox/browser/autocomplete_input.cc` - Omnibox parsing
+- `chrome/app/settings_strings.grdp` - Settings UI strings
+
+<Tip>
+The entire bang system is around 1000 lines of C++ code, demonstrating how tightly integrated it is with Chromium's engine.
+</Tip>

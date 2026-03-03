@@ -1,0 +1,395 @@
+---
+title: Onboarding System
+description: First-run experience, setup flow, and user consent for Helium services
+---
+
+Helium's onboarding system introduces new users to the browser and collects consent for optional features. It runs on first launch at `helium://setup`.
+
+<Note>
+  The onboarding experience is designed to be transparent about privacy choices and put users in control from the start.
+</Note>
+
+## Architecture
+
+The onboarding system is a standalone web application built separately from the browser:
+
+<CardGroup cols={2}>
+  <Card title="Separate Repository" icon="github">
+    [helium-onboarding](https://github.com/imputnet/helium-onboarding)
+  </Card>
+  <Card title="Built Artifact" icon="box">
+    Compiled and packaged as tarball
+  </Card>
+  <Card title="Downloaded at Build" icon="download">
+    Fetched during Helium build process
+  </Card>
+  <Card title="Component Integration" icon="puzzle-piece">
+    Integrated into browser as internal page
+  </Card>
+</CardGroup>
+
+## Build Integration
+
+The onboarding page is managed through `deps.ini`:
+
+```ini deps.ini
+[onboarding]
+version = 202601021937
+url = https://github.com/imputnet/helium-onboarding/releases/download/%(version)s/helium-onboarding-%(version)s.tar.gz
+download_filename = onboarding-page-%(version)s.tar.gz
+sha256 = c8a1f906cf6461179d4fd311c529f0f8e01fb21b63ef179f593a24190c5dca80
+output_path = ./components/helium_onboarding
+```
+
+**Source**: `~/workspace/source/deps.ini:9-14`
+
+<Steps>
+  <Step title="Release Created">
+    New version of onboarding app is built and released on GitHub
+  </Step>
+  <Step title="Version Bump">
+    `deps.ini` is updated with new version number and SHA256 hash
+  </Step>
+  <Step title="Build Time">
+    Helium build system downloads the tarball
+  </Step>
+  <Step title="Integration">
+    Onboarding assets are extracted to `components/helium_onboarding/`
+  </Step>
+  <Step title="Compilation">
+    Browser compiles with onboarding page bundled
+  </Step>
+</Steps>
+
+## URL Scheme
+
+The onboarding page is accessible via the custom URL scheme:
+
+```
+helium://setup
+```
+
+This is registered as an internal page in the browser, similar to:
+- `chrome://settings`
+- `chrome://extensions`
+- `chrome://flags`
+
+## Onboarding Flow
+
+<Steps>
+  <Step title="First Launch Detection">
+    Browser detects this is the first launch (no profile exists)
+  </Step>
+  <Step title="Navigate to Setup">
+    Browser automatically opens `helium://setup` in a new tab
+  </Step>
+  <Step title="Welcome Screen">
+    User sees introduction to Helium and its privacy features
+  </Step>
+  <Step title="Services Consent">
+    User chooses whether to enable Helium services
+  </Step>
+  <Step title="Additional Options">
+    User configures other first-run options (default search engine, theme, etc.)
+  </Step>
+  <Step title="Completion">
+    Preferences are saved and user is taken to the New Tab Page
+  </Step>
+</Steps>
+
+## HOP (Helium Opinionated Policies) Integration
+
+The onboarding system integrates with Helium's policy system:
+
+<Accordion title="What is HOP?">
+  **HOP (Helium Opinionated Policies)** is a custom policy provider that sets privacy-focused defaults and enforces security settings.
+
+  Key features:
+  - Highest priority policy source (overrides enterprise policies)
+  - Sets privacy-first defaults
+  - Configures password manager behavior
+  - Manages WebRTC privacy settings
+
+  **Source**: `~/workspace/source/patches/helium/hop/setup.patch`
+</Accordion>
+
+### Policy Provider Architecture
+
+```cpp
+std::vector<std::unique_ptr<policy::ConfigurationPolicyProvider>>
+ChromeBrowserPolicyConnector::CreatePolicyProviders() {
+    auto providers = BrowserPolicyConnector::CreatePolicyProviders();
+    
+    auto hop_provider = std::make_unique<HopProvider>();
+    hop_provider_ = hop_provider.get();
+    
+    // Insert at highest priority
+    providers.insert(providers.begin(), std::move(hop_provider));
+    
+    return providers;
+}
+```
+
+**Source**: `~/workspace/source/patches/helium/hop/setup.patch:15-19`
+
+### Policy Priority
+
+Helium's policy system has a defined priority order:
+
+| Priority | Source | Can Override? |
+|----------|--------|---------------|
+| **Highest** | Helium Opinionated Policy (HOP) | Everything |
+| High | Restricted Managed Guest Session | Everything below |
+| Medium | Platform/Enterprise Policies | Everything below |
+| Low | Cloud Policies | Everything below |
+| **Lowest** | Default Values | Nothing |
+
+```cpp
+enum PolicyPriorityBrowser {
+  kCloudUserDoubleRaised,
+  kHeliumOpionatedPolicy,  // Highest priority
+  kMerged,
+};
+```
+
+**Source**: `~/workspace/source/patches/helium/hop/setup.patch:160-162`
+
+## Service Consent
+
+The onboarding flow explicitly asks for consent to enable Helium services:
+
+### What Users See
+
+<Accordion title="Services Explanation">
+  During onboarding, users see:
+  
+  - **What Helium services are**: Anonymous web services for additional functionality
+  - **What they provide**: Extension updates, browser updates, filter lists, spellcheck
+  - **Privacy guarantee**: No tracking, no telemetry, self-hostable
+  - **Opt-in choice**: Services are disabled by default until user consents
+</Accordion>
+
+### Preference Storage
+
+Consent is stored in user preferences:
+
+```cpp
+registry->RegisterBooleanPref(prefs::kHeliumServicesConsented, false);
+registry->RegisterBooleanPref(prefs::kHeliumServicesEnabled, true);
+registry->RegisterBooleanPref(prefs::kHeliumDidOnboarding, false);
+```
+
+**Preferences**:
+- `helium.services.consented`: Has user seen the consent screen?
+- `helium.services.enabled`: Are services currently enabled?
+- `helium.did_onboarding`: Has user completed onboarding?
+
+## Development
+
+### Running Locally
+
+During development, you can work on the onboarding page separately:
+
+```bash
+git clone https://github.com/imputnet/helium-onboarding
+cd helium-onboarding
+npm install
+npm run dev
+```
+
+This runs a development server for the onboarding app.
+
+### Integration Testing
+
+To test onboarding integration in Helium:
+
+<Steps>
+  <Step title="Build Onboarding">
+    ```bash
+    npm run build
+    ```
+  </Step>
+  <Step title="Create Tarball">
+    ```bash
+    tar -czf helium-onboarding-test.tar.gz dist/
+    ```
+  </Step>
+  <Step title="Update deps.ini">
+    Point to your local tarball for testing
+  </Step>
+  <Step title="Build Helium">
+    Build Helium with your test onboarding page
+  </Step>
+  <Step title="Test First Run">
+    Delete profile directory and launch Helium to trigger onboarding
+  </Step>
+</Steps>
+
+### Debugging
+
+You can open DevTools on the onboarding page:
+
+1. Navigate to `helium://setup`
+2. Right-click → Inspect
+3. DevTools opens for the onboarding page
+
+<Note>
+  The onboarding page runs in a standard WebContents, so all Chrome DevTools features work.
+</Note>
+
+## Onboarding vs Settings
+
+Understanding the relationship:
+
+<Tabs>
+  <Tab title="Onboarding (helium://setup)">
+    **Purpose**: First-run experience and initial consent
+    
+    **When shown**:
+    - First launch of Helium
+    - User hasn't completed onboarding
+    - Can be manually accessed anytime
+    
+    **Features**:
+    - Introduction to Helium
+    - Service consent flow
+    - Initial configuration
+    - Welcome experience
+  </Tab>
+
+  <Tab title="Settings (chrome://settings)">
+    **Purpose**: Ongoing configuration management
+    
+    **When shown**:
+    - User opens Settings menu
+    - After onboarding is complete
+    
+    **Features**:
+    - Toggle services on/off
+    - Configure custom origin
+    - Review schema changes
+    - Manage individual service preferences
+  </Tab>
+</Tabs>
+
+## Localization
+
+The onboarding page supports internationalization:
+
+- Translations managed in onboarding repository
+- Matches Helium's supported languages
+- Uses browser's language preference
+- Fallback to English if translation unavailable
+
+## Version Tracking
+
+The version number in `deps.ini` follows the format:
+
+```
+YYYYMMDDHHMM
+```
+
+Example: `202601021937` = January 2nd, 2026, 19:37 UTC
+
+This timestamp-based versioning ensures:
+- Clear chronological ordering
+- Easy identification of build time
+- No semantic versioning confusion
+
+## Schema Change Notifications
+
+When Helium services schema changes, users who already completed onboarding see notifications:
+
+<Steps>
+  <Step title="Schema Version Incremented">
+    New version of Helium includes updated schema version
+  </Step>
+  <Step title="Detection on Launch">
+    Browser detects user's acknowledged schema version < current version
+  </Step>
+  <Step title="App Menu Badge">
+    "Services updated" badge appears on app menu
+  </Step>
+  <Step title="Settings Alert">
+    Notification appears on Helium services settings page
+  </Step>
+  <Step title="User Reviews">
+    User clicks notification to see changelog
+  </Step>
+  <Step title="Acknowledgment">
+    User accepts changes, schema version is updated
+  </Step>
+</Steps>
+
+This ensures users who enabled services during onboarding are informed of any behavior changes.
+
+**See**: [Helium Services - Schema Versioning](/reference/helium-services) for details on the schema versioning system
+
+## Technical Details
+
+<AccordionGroup>
+  <Accordion title="Build System Integration" icon="hammer">
+    The onboarding component is downloaded and integrated during the Chromium build process:
+    
+    1. Build script reads `deps.ini`
+    2. Downloads tarball from GitHub releases
+    3. Verifies SHA256 checksum
+    4. Extracts to `components/helium_onboarding/`
+    5. GN build system includes the component
+    6. Assets are embedded in the binary
+  </Accordion>
+
+  <Accordion title="Custom URL Handler" icon="link">
+    The `helium://setup` URL is registered as a custom scheme:
+    
+    - Handled by Chromium's URL routing system
+    - Serves static files from embedded component
+    - No network requests required
+    - Works offline
+  </Accordion>
+
+  <Accordion title="Preference Initialization" icon="database">
+    First-run preferences are initialized before onboarding:
+    
+    ```cpp
+    registry->RegisterBooleanPref(prefs::kHeliumDidOnboarding, false);
+    registry->RegisterBooleanPref(prefs::kHeliumServicesConsented, false);
+    registry->RegisterBooleanPref(prefs::kHeliumServicesEnabled, true);
+    ```
+    
+    After onboarding completes:
+    - `helium.did_onboarding` → `true`
+    - `helium.services.consented` → `true` (if user enabled services)
+    - Other preferences set based on user choices
+  </Accordion>
+
+  <Accordion title="Communication with Browser" icon="arrows-left-right">
+    The onboarding page communicates with the browser via:
+    
+    - **Chrome APIs**: `chrome.settingsPrivate` for preference management
+    - **Message passing**: JavaScript ↔ C++ communication
+    - **WebUI handlers**: Backend handlers process onboarding completion
+    
+    This allows the web-based onboarding UI to configure native browser settings.
+  </Accordion>
+</AccordionGroup>
+
+## Future Enhancements
+
+Planned improvements to the onboarding system:
+
+- **Profile import**: Import bookmarks/settings from other browsers
+- **Search engine selection**: Choose default search engine during setup
+- **Theme preview**: Preview and select color themes
+- **Extension recommendations**: Suggest privacy-focused extensions
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Architecture Overview" icon="sitemap" href="/reference/architecture">
+    See how onboarding fits into Helium's architecture
+  </Card>
+  <Card title="Helium Services" icon="server" href="/reference/helium-services">
+    Learn what services users consent to during onboarding
+  </Card>
+</CardGroup>

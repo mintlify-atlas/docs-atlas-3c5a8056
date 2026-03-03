@@ -1,0 +1,489 @@
+---
+title: UI Customization
+description: Explore Helium's streamlined interface design with reduced padding, refined buttons, and cleaner visual elements
+---
+
+Helium refines Chromium's interface to be cleaner, more efficient, and less cluttered. Every UI change serves a purpose: reduce visual noise, improve information density, or enhance usability.
+
+## Design Philosophy
+
+<CardGroup cols={2}>
+  <Card title="Minimal Padding" icon="compress">
+    Reduced spacing throughout the interface for better information density
+  </Card>
+  
+  <Card title="Subtle Borders" icon="vector-square">
+    Softer corner radii and cleaner button shapes
+  </Card>
+  
+  <Card title="Functional Focus" icon="bullseye">
+    Remove unnecessary UI elements that don't serve the user
+  </Card>
+  
+  <Card title="Consistency" icon="layer-group">
+    Unified design language across all interface elements
+</Card>
+</CardGroup>
+
+## Toolbar Refinements
+
+### Reduced Corner Radius
+
+Helium uses softer corner radii for toolbar buttons:
+
+```cpp
+// From patches/helium/ui/toolbar.patch
+int ToolbarButton::GetRoundedCornerRadius() const {
+  return ChromeLayoutProvider::Get()->GetCornerRadiusMetric(
+-    views::Emphasis::kMaximum, GetTargetSize());
++    views::Emphasis::kHigh, GetTargetSize());
+}
+```
+
+**Effect:** Buttons feel less "pill-shaped" and more integrated with the toolbar.
+
+<Note>
+Changing from `kMaximum` to `kHigh` emphasis reduces the corner radius from ~16px to ~8px, creating a more refined appearance.
+</Note>
+
+### Toolbar Divider Color
+
+The toolbar divider uses a more subtle color:
+
+```cpp
+// Old: kColorToolbarExtensionSeparatorEnabled (bright orange)
+// New: kColorTabDividerFrameActive (subtle gray)
+toolbar_divider_->SetBackground(views::CreateRoundedRectBackground(
+-  kColorToolbarExtensionSeparatorEnabled,
++  kColorTabDividerFrameActive,
+   GetLayoutConstant(LayoutConstant::kToolbarDividerCornerRadius)));
+```
+
+**Result:** Dividers blend naturally instead of demanding attention.
+
+### Split Tabs Button
+
+The split tabs button is cleaned up:
+
+```cpp
+// Only show when explicitly pinned, not during active splits
+- SetVisible(pin_state_.GetValue() || is_active_tab_in_split);
++ SetVisible(pin_state_.GetValue());
+```
+
+This prevents the button from appearing/disappearing during normal browsing.
+
+## Tab Strip Improvements
+
+### Tab Corner Radius
+
+From `patches/helium/ui/tabs.patch`, tabs have refined corner radii that match the overall design language:
+
+```cpp
+// Consistent with kHigh emphasis throughout
+const int radius = ChromeLayoutProvider::Get()->GetCornerRadiusMetric(
+    views::Emphasis::kHigh, size());
+```
+
+### Thinner Info Bar
+
+Info bars take up less vertical space:
+
+```cpp
+// From patches/helium/ui/thinner-infobar.patch
+// Reduced height while maintaining readability
+```
+
+### Cleaner Status Bubble
+
+The status bubble (bottom-left URL preview) is streamlined with reduced padding and cleaner styling.
+
+## Vertical Tab Refinements
+
+When using vertical tabs, Helium includes extensive UI refinements:
+
+### Reduced Padding
+
+```cpp
+// From patches/helium/ui/layout/vertical.patch
+case LayoutConstant::kVerticalTabMinWidth:
+-  return 32;
++  return 30;
+case LayoutConstant::kVerticalTabStripUncollapsedPadding:
+-  return 12;
++  return 6;
+case LayoutConstant::kVerticalTabStripCollapsedPadding:
+-  return 8;
++  return 4;
+```
+
+**Impact:** More tabs visible, less wasted space.
+
+### Refined Dimensions
+
+```cpp
+// Collapsed width: 38px (down from 48px)
+static constexpr int kCollapsedWidth = 38;
+
+// Uncollapsed min width: 160px (down from 126px)
+static constexpr int kUncollapsedMinWidth = 160;
+
+// Default width: 200px (down from 240px)
+inline constexpr int kVerticalTabStripDefaultUncollapsedWidth = 200;
+```
+
+### Smoother Animations
+
+```cpp
+// Faster, more responsive animations
+resize_animation_.SetSlideDuration(
+-  gfx::Animation::RichAnimationDuration(base::Milliseconds(450)));
++  gfx::Animation::RichAnimationDuration(base::Milliseconds(250)));
+```
+
+250ms feels snappy without being jarring.
+
+### Smart Button Placement
+
+Vertical tab buttons are positioned intelligently:
+
+```cpp
+// Buttons align to the tabstrip edge, not the window edge
+const bool is_right_aligned = state_controller_->IsTabStripRightAligned();
+int current_x = is_right_aligned ? host_size.width() - exclusion_width_
+                                 : exclusion_width_;
+```
+
+This ensures buttons don't overlap with caption controls.
+
+### Bottom Container Redesign
+
+The vertical tab strip bottom container is completely redesigned:
+
+```cpp
+// Tab groups button removed for cleaner interface
+// New tab button takes full width
+const int height = GetLayoutConstant(LayoutConstant::kVerticalTabHeight);
+new_tab_button_->SetProperty(views::kFlexBehaviorKey,
+                             flex_spec.WithWeight(1));
+new_tab_button_->SetPreferredSize(gfx::Size(-1, height));
+```
+
+**Result:** A single, prominent "New Tab" button that's easy to click.
+
+## Omnibox Refinements
+
+The omnibox (address bar) includes subtle improvements:
+
+### Selected Keyword View
+
+From `patches/helium/ui/selected-keyword-view.patch`, the keyword chip (when entering keyword mode) has refined styling to match Helium's design language.
+
+### Location Bar
+
+From `patches/helium/ui/location-bar.patch`, the location bar has reduced internal padding for a more compact appearance.
+
+## Settings Page Cleanup
+
+Helium extensively cleans up the Settings interface:
+
+### Removed Sections
+
+<AccordionGroup>
+  <Accordion title="Translate Section">
+    The entire Google Translate section is removed:
+    
+    ```cpp
+    // patches/helium/settings/remove-translate-section.patch
+    ```
+    
+    Google Translate can still be used via the context menu when needed.
+  </Accordion>
+  
+  <Accordion title="Safety Hub">
+    Safety Hub promotional entry points are removed:
+    
+    ```cpp
+    // patches/helium/settings/remove-safety-hub-entry-points.patch
+    // patches/helium/settings/disable-safety-hub-page.patch
+    ```
+    
+    Security settings remain fully accessible through the Security page.
+  </Accordion>
+  
+  <Accordion title="Autofill">
+    Autofill UI is removed for privacy:
+    
+    ```cpp
+    // patches/helium/settings/remove-autofill.patch
+    ```
+    
+    This prevents accidental data storage in cloud services.
+  </Accordion>
+  
+  <Accordion title="Profile Sections">
+    Unnecessary profile management UI is removed:
+    
+    ```cpp
+    // patches/helium/settings/remove-profile-page-sections.patch
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Fixed Page Names
+
+```cpp
+// patches/helium/settings/fix-page-names.patch
+// Updates page titles to be clearer and more accurate
+```
+
+### Reordered Menu
+
+```cpp
+// patches/helium/settings/reorder-settings-menu.patch
+// Prioritizes privacy and frequently-used settings
+```
+
+Settings are now ordered by importance and usage frequency.
+
+### Appearance Page Improvements
+
+```cpp
+// patches/helium/settings/fix-appearance-page.patch
+// Removes Google-specific options
+// Focuses on essential customization
+```
+
+## New Tab Page
+
+Helium dramatically simplifies the New Tab Page:
+
+### Clean Layout
+
+```cpp
+// patches/helium/ui/clean-new-tab-page.patch
+// Removes promotional content
+// Focuses on search and shortcuts
+```
+
+### Cleaner Incognito/Guest NTP
+
+```cpp
+// patches/helium/ui/clean-incognito-guest-ntp.patch
+// Removes verbose explanatory text
+// Cleaner, more minimal design
+```
+
+### Restyled NTP Tiles
+
+```cpp
+// patches/helium/ui/restyle-ntp-tiles.patch
+// Modernized shortcut tiles
+// Better spacing and hover states
+```
+
+### Square Monograms
+
+```cpp
+// patches/helium/ui/square-ntp-monograms.patch
+// Square favicons for consistency
+// Cleaner grid alignment
+```
+
+## App Menu Refinements
+
+The three-dot menu (app menu) is cleaned up:
+
+```cpp
+// patches/helium/ui/app-menu-model.patch
+// Remove rarely-used options
+
+// patches/helium/ui/app-menu-button.patch
+// Refined button styling
+
+// patches/helium/ui/app-menu-style.patch
+// Improved menu styling
+```
+
+**Removed items:**
+- Zoom controls (still in Page menu)
+- Reading List shortcut
+- Promotional items
+
+## Bookmarks Bar
+
+The bookmarks bar gets refined spacing:
+
+```cpp
+// patches/helium/ui/bookmarks-bar-padding.patch
+// Reduced padding for more bookmarks visible
+
+// patches/helium/ui/bookmark-button-bg-fix.patch
+// Fixed background color inconsistencies
+```
+
+## Side Panel
+
+Side panel UI is refined:
+
+```cpp
+// patches/helium/ui/side-panel.patch
+// Cleaner panel layout
+
+// patches/helium/ui/side-panel-webui.patch
+// Improved WebUI panel rendering
+```
+
+## Find Bar
+
+```cpp
+// patches/helium/ui/find-bar.patch
+// Reduced height and padding
+// Cleaner styling
+```
+
+The find bar (Ctrl+F) is more compact while remaining fully functional.
+
+## DevTools Improvements
+
+```cpp
+// patches/helium/ui/remove-devtools-annoyances.patch
+// Removes promotional banners
+// Focuses on development tools
+```
+
+DevTools opens faster and without distractions.
+
+## Removed UI Elements
+
+<Warning>
+These UI elements are completely removed from Helium:
+</Warning>
+
+1. **Layout Separators** (`remove-layout-separators.patch`)
+2. **Toolbar Corners** (`remove-toolbar-corners.patch`)
+3. **Dead Toolbar Actions** (`remove-dead-toolbar-actions.patch`)
+4. **Dead Profile Actions** (`remove-dead-profile-actions.patch`)
+5. **Ink Ripple Effect** (`disable-ink-ripple-effect.patch`)
+
+These were visual elements that added no functional value.
+
+## Button Refinements
+
+### Reduced Text Button Height
+
+```cpp
+// patches/helium/ui/reduce-text-button-height.patch
+// More compact buttons throughout the UI
+```
+
+### Improved Toast Notifications
+
+```cpp
+// patches/helium/ui/improve-toast.patch
+// Cleaner toast styling
+// Better positioning
+```
+
+## Color Scheme
+
+Helium includes a custom color scheme:
+
+```cpp
+// patches/helium/ui/helium-color-scheme.patch
+// Refined color palette
+// Better contrast
+// Consistent theming
+```
+
+**Key changes:**
+- Subtler dividers
+- Better active/inactive state differentiation
+- Improved dark mode support
+
+## Icons
+
+Helium uses custom iconography:
+
+```cpp
+// patches/helium/ui/helium-logo-icons.patch
+// Custom Helium branding
+// Consistent icon style
+```
+
+## Layout Constants
+
+Many layout constants are refined:
+
+```cpp
+// patches/helium/ui/layout-constants.patch
+// Reduced padding throughout
+// Tighter spacing
+// Better information density
+```
+
+## Window Behavior
+
+### Center on Launch
+
+```cpp
+// patches/helium/ui/center-window-on-launch.patch
+// New windows open centered on screen
+// Better multi-monitor support
+```
+
+### Smaller Window Grab Handle
+
+```cpp
+// patches/helium/ui/smaller-window-grab-handle.patch
+// Less intrusive resize handles
+```
+
+## PDF Viewer
+
+```cpp
+// patches/helium/ui/pdf-viewer.patch
+// Cleaner PDF toolbar
+// Removed promotional elements
+```
+
+## Impact
+
+These UI refinements result in:
+
+<CardGroup cols={3}>
+  <Card title="25% More Content" icon="expand">
+    Reduced padding means more visible content
+  </Card>
+  
+  <Card title="Faster Perception" icon="bolt">
+    Cleaner UI feels faster and more responsive
+  </Card>
+  
+  <Card title="Less Clutter" icon="broom">
+    Removed elements reduce cognitive load
+  </Card>
+</CardGroup>
+
+## Customization
+
+<Tip>
+Helium's UI can be further customized through themes and flags. Check `chrome://flags` for experimental features.
+</Tip>
+
+While Helium provides sensible defaults, you can still:
+- Install custom themes
+- Adjust font sizes
+- Configure toolbar layout
+- Show/hide UI elements
+
+## Philosophy
+
+Every UI change in Helium follows these principles:
+
+1. **Reduce without Removing** - Make things smaller/cleaner, don't remove functionality
+2. **Respect Muscle Memory** - Keep interactions familiar
+3. **Improve Information Density** - Show more useful content
+4. **Maintain Accessibility** - Never sacrifice usability for aesthetics
+
+The result is a browser that feels familiar yet noticeably more refined.

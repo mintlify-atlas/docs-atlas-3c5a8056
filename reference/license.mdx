@@ -1,0 +1,186 @@
+---
+title: Licensing Information
+description: Understanding Helium's licensing and legal framework
+---
+
+Helium's code is open source and distributed under multiple licenses depending on the origin of the code. This page explains the licensing structure and what it means for users and developers.
+
+## Licensing Overview
+
+<CardGroup cols={2}>
+  <Card title="Helium Original Code" icon="file-code">
+    Licensed under GPL-3.0
+  </Card>
+  
+  <Card title="Imported Code" icon="file-import">
+    Retains original licenses (e.g., BSD-3-Clause)
+  </Card>
+</CardGroup>
+
+## Helium-Specific Code: GPL-3.0
+
+All code, patches, modified portions of imported code or patches, and any other content that is **unique to Helium** and not imported from other repositories is licensed under the **GNU General Public License v3.0**.
+
+<Accordion title="What is covered by GPL-3.0?">
+  - Original Helium features and functionality
+  - Modifications to imported code
+  - Helium-specific patches
+  - Build scripts and tooling unique to Helium
+  - Documentation and branding materials
+</Accordion>
+
+### GPL-3.0 License
+
+The full text of the GPL-3.0 license can be found in the [LICENSE](https://github.com/imputnet/helium/blob/main/LICENSE) file in the Helium repository.
+
+<Note>
+Copyright (C) 2025 The Helium Authors
+
+This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+</Note>
+
+### Key Points of GPL-3.0
+
+<AccordionGroup>
+  <Accordion title="Freedom to Use" icon="check">
+    You are free to use Helium for any purpose, personal or commercial, without restrictions.
+  </Accordion>
+
+  <Accordion title="Freedom to Study" icon="book">
+    You have access to the source code and can study how Helium works.
+  </Accordion>
+
+  <Accordion title="Freedom to Modify" icon="pen">
+    You can modify Helium to suit your needs and distribute your modifications.
+  </Accordion>
+
+  <Accordion title="Freedom to Share" icon="share-nodes">
+    You can distribute copies of Helium to help others, with or without modifications.
+  </Accordion>
+
+  <Accordion title="Copyleft Requirement" icon="sync">
+    If you distribute modified versions of Helium, you must:
+    - Make the source code available
+    - License your modifications under GPL-3.0
+    - Preserve copyright notices
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+**No Warranty:** Helium is provided "as is" without warranty of any kind. See section 15 and 16 of the GPL-3.0 license for details.
+</Warning>
+
+## Imported Code: Original Licenses
+
+Any content imported from other projects **retains its original license**. This ensures compliance with upstream projects and respects their licensing choices.
+
+### ungoogled-chromium: BSD 3-Clause License
+
+Code imported from ungoogled-chromium remains licensed under the **BSD 3-Clause License**.
+
+<Accordion title="ungoogled-chromium BSD-3-Clause License">
+  ```
+  BSD 3-Clause License
+  
+  Copyright (c) 2015-2026, The ungoogled-chromium Authors
+  All rights reserved.
+  
+  Redistribution and use in source and binary forms, with or without
+  modification, are permitted provided that the following conditions are met:
+  
+  1. Redistributions of source code must retain the above copyright notice,
+     this list of conditions and the following disclaimer.
+  
+  2. Redistributions in binary form must reproduce the above copyright notice,
+     this list of conditions and the following disclaimer in the documentation
+     and/or other materials provided with the distribution.
+  
+  3. Neither the name of the copyright holder nor the names of its
+     contributors may be used to endorse or promote products derived from
+     this software without specific prior written permission.
+  ```
+  
+  Full license: [LICENSE.ungoogled_chromium](https://github.com/imputnet/helium/blob/main/LICENSE.ungoogled_chromium)
+</Accordion>
+
+### The Chromium Project
+
+The Chromium Project code is licensed under a BSD-style license. See [chromium.org/developers/licensing](https://www.chromium.org/developers/licensing) for details.
+
+### Other Upstream Projects
+
+Other components and dependencies maintain their respective licenses:
+- **Inox patchset** - Original license applies
+- **Debian patches** - GPL and other compatible licenses
+- **Bromite patches** - GPL-3.0
+- **Iridium patches** - BSD-style license
+
+## Understanding the Dual Licensing
+
+<Steps>
+  <Step title="Original Code">
+    Code written specifically for Helium is GPL-3.0 licensed
+  </Step>
+  
+  <Step title="Imported Code">
+    Code from ungoogled-chromium, Chromium, and other projects retains original licenses
+  </Step>
+  
+  <Step title="Modified Imported Code">
+    When Helium modifies imported code, those modifications are GPL-3.0
+  </Step>
+  
+  <Step title="Distribution">
+    The combined work (Helium binary) must comply with GPL-3.0 requirements
+  </Step>
+</Steps>
+
+## For Users
+
+<Tip>
+**What this means for you:**
+- You can use Helium freely for any purpose
+- You have access to all source code
+- You can verify what Helium does and doesn't do
+- No telemetry or hidden tracking
+</Tip>
+
+## For Developers
+
+<Info>
+**What this means for developers:**
+- You can fork and modify Helium
+- You must license your fork under GPL-3.0
+- You must provide source code with distributions
+- Respect upstream project licenses for imported code
+- Contribute improvements back to the community
+</Info>
+
+## Beta Software Notice
+
+<Warning>
+Helium is currently in beta. Unexpected issues may occur. We are not responsible for any damage caused by usage of beta software. Use at your own risk.
+</Warning>
+
+## License Files
+
+All license files are available in the Helium repository:
+
+- [LICENSE](https://github.com/imputnet/helium/blob/main/LICENSE) - GPL-3.0 for Helium-specific code
+- [LICENSE.ungoogled_chromium](https://github.com/imputnet/helium/blob/main/LICENSE.ungoogled_chromium) - BSD-3-Clause for ungoogled-chromium code
+
+## Questions?
+
+If you have questions about licensing or need clarification:
+
+- Check the [GPL-3.0 FAQ](https://www.gnu.org/licenses/gpl-faq.html)
+- Review the [BSD License explanation](https://opensource.org/licenses/BSD-3-Clause)
+- Open an issue on [GitHub](https://github.com/imputnet/helium/issues) for specific questions
+
+<Card
+  title="View Full Licenses"
+  icon="scale-balanced"
+  href="https://github.com/imputnet/helium"
+>
+  Access all license files in the Helium repository
+</Card>

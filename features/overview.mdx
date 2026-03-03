@@ -1,0 +1,112 @@
+---
+title: Features Overview
+description: Discover what makes Helium different - a privacy-focused browser built on Chromium with powerful customization options
+---
+
+Helium is a privacy-focused Chromium-based web browser that puts control back in your hands. Built from the Chromium source, Helium removes tracking features and adds powerful enhancements for a better browsing experience.
+
+## Core Features
+
+<CardGroup cols={2}>
+  <Card title="Privacy by Default" icon="shield-check" href="/features/privacy">
+    No telemetry, Safe Browsing disabled, and privacy-first configuration out of the box
+  </Card>
+  
+  <Card title="Native Bangs" icon="bolt" href="/features/native-bangs">
+    DuckDuckGo-style !bang shortcuts built into the omnibox for faster searching
+  </Card>
+  
+  <Card title="uBlock Origin Built-in" icon="shield-halved" href="/features/ublock-origin">
+    Industry-leading content blocker pre-installed as a native component
+  </Card>
+  
+  <Card title="Vertical Tabs" icon="sidebar" href="/features/vertical-tabs">
+    Modern vertical tab layout with customizable width and collapsible sidebar
+  </Card>
+  
+  <Card title="UI Customization" icon="palette" href="/features/ui-customization">
+    Clean, minimal interface with reduced padding and streamlined design
+  </Card>
+  
+  <Card title="Open Source" icon="code-branch" href="https://github.com/imputnet/helium">
+    GPL-3.0 licensed with transparent development on GitHub
+  </Card>
+</CardGroup>
+
+## Philosophy
+
+Helium is designed around three core principles:
+
+<AccordionGroup>
+  <Accordion title="Privacy First">
+    Every feature in Helium is evaluated through a privacy lens. We remove telemetry, disable unnecessary network requests, and configure defaults that protect your data.
+    
+    - Safe Browsing disabled (`safe_browsing_mode=0`)
+    - No Google API keys or default client IDs
+    - Remote services disabled by default
+    - No field trial testing configuration
+  </Accordion>
+  
+  <Accordion title="User Control">
+    You decide how your browser works. From UI layout to search engines, Helium gives you granular control without unnecessary restrictions.
+    
+    - Customizable toolbar layout
+    - Flexible vertical tab positioning (left or right)
+    - Control over which services to enable
+    - Add your own search engines
+  </Accordion>
+  
+  <Accordion title="Performance & Efficiency">
+    A fast, efficient browser shouldn't compromise on features. Helium maintains Chromium's performance while adding useful enhancements.
+    
+    - Native bang implementation for instant searches
+    - Efficient vertical tab rendering
+    - Minimal UI overhead with reduced padding
+    - Built-in ad blocking without performance penalty
+  </Accordion>
+</AccordionGroup>
+
+## What's Removed
+
+Helium removes features that compromise privacy or add unnecessary bloat:
+
+- **Hangout Services Extension** - Disabled (`enable_hangout_services_extension=false`)
+- **mDNS** - Removed (`enable_mdns=false`)
+- **Remoting** - Disabled (`enable_remoting=false`)
+- **Reporting** - Disabled (`enable_reporting=false`)
+- **Service Discovery** - Removed (`enable_service_discovery=false`)
+- **Field Trial Testing** - Disabled (`disable_fieldtrial_testing_config=true`)
+
+## What's Enhanced
+
+<Note>
+Helium doesn't just remove features - it adds meaningful improvements to your browsing experience.
+</Note>
+
+Key enhancements include:
+
+1. **Native Bangs System** - Search across hundreds of websites instantly using !bang shortcuts, powered by a custom `BangManager` that integrates with Chromium's search engine system
+
+2. **Integrated uBlock Origin** - Version 1.69.0-2 installed as a component extension, ensuring it's always available and up-to-date
+
+3. **Vertical Tab Support** - Full vertical tab strip implementation with:
+   - Resizable width (30px collapsed, 160-400px uncollapsed)
+   - Snap-to-default sizing
+   - Smooth animations (250ms)
+   - Smart button placement
+
+4. **Refined UI** - Thoughtful design changes including:
+   - Reduced corner radius for toolbar buttons
+   - Cleaner tab rendering
+   - Streamlined settings pages
+   - Minimal padding throughout
+
+## Getting Started
+
+Explore each feature in detail:
+
+- **[Privacy Features](/features/privacy)** - Learn how Helium protects your data
+- **[Native Bangs](/features/native-bangs)** - Master !bang shortcuts for faster browsing
+- **[uBlock Origin](/features/ublock-origin)** - Configure the built-in content blocker
+- **[Vertical Tabs](/features/vertical-tabs)** - Customize your tab layout
+- **[UI Customization](/features/ui-customization)** - Understand the design changes

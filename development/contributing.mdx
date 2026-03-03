@@ -1,0 +1,169 @@
+---
+title: Contributing to Helium
+description: Guidelines for contributing code, patches, and improvements to the Helium browser project
+---
+
+## Getting Started
+
+Helium is a privacy-focused Chromium-based web browser built on top of [ungoogled-chromium](https://github.com/ungoogled-software/ungoogled-chromium). We welcome contributions that align with our mission of providing the best privacy by default, unbiased ad-blocking, and a bloat-free browsing experience.
+
+<Note>
+  Helium is still in beta. Unexpected issues may occur, and contributions help us improve the browser for everyone.
+</Note>
+
+## Before You Contribute
+
+Before submitting a pull request, please ensure the following:
+
+<Steps>
+  <Step title="Check for an existing issue">
+    An issue must exist where the maintainers agreed that the change should be implemented. This could be:
+    - An approved feature request
+    - A confirmed bug report
+    
+    If no issue exists, create one first and wait for maintainer approval.
+  </Step>
+  
+  <Step title="Test your changes locally">
+    Ensure your contribution works locally and does not break anything. If you're still working on it, mark your PR as a draft.
+  </Step>
+  
+  <Step title="Follow contribution standards">
+    If your contribution is non-trivial, do not use AI to write most of it. We value human-crafted contributions for substantial changes.
+  </Step>
+</Steps>
+
+<Warning>
+  You will be permanently banned from interacting with this organization if you falsely claim to have followed these guidelines.
+</Warning>
+
+## Pull Request Process
+
+### 1. Testing Requirements
+
+Test your changes on at least one platform:
+
+- **Windows** - Test Windows-specific builds and functionality
+- **macOS** - Verify macOS compatibility and packaging
+- **Linux** - Ensure Linux builds and AppImage work correctly
+
+### 2. Pull Request Template
+
+When creating a pull request, you'll need to confirm:
+
+```markdown
+- [ ] An issue exists where the maintainers agreed that this should be implemented
+- [ ] I tested that my contribution works locally, and does not break anything
+- [ ] If my contribution is non-trivial, I did not use AI to write most of it
+- [x] I understand that I will be permanently banned if I lied by checking any of these checkboxes
+
+Tested on (check one or more):
+- [ ] Windows
+- [ ] macOS
+- [ ] Linux
+```
+
+### 3. Code Quality
+
+Before submitting, validate your changes using the development utilities:
+
+<CodeGroup>
+```bash Python Linting
+# Run pylint on devutils
+./devutils/run_devutils_pylint.py
+
+# Run pylint on utils
+./devutils/run_utils_pylint.py
+```
+
+```bash Code Formatting
+# Format devutils code
+./devutils/run_devutils_yapf.sh
+
+# Format utils code
+./devutils/run_utils_yapf.sh
+```
+
+```bash Run Tests
+# Test devutils
+./devutils/run_devutils_tests.sh
+
+# Test utils
+./devutils/run_utils_tests.sh
+```
+</CodeGroup>
+
+## Types of Contributions
+
+### Patches
+
+Helium uses patches to modify Chromium's behavior. See the [Patch Development](/development/patch-development) guide for details on creating and maintaining patches.
+
+### Configuration Changes
+
+Changes to configuration files (GN flags, downloads.ini, etc.) must pass validation:
+
+```bash
+./devutils/validate_config.py
+```
+
+### Documentation
+
+Documentation improvements are always welcome. Update relevant files and ensure clarity for other contributors.
+
+### Bug Fixes
+
+When fixing bugs:
+1. Reference the issue number in your PR
+2. Describe the root cause
+3. Explain your fix approach
+4. Include test results
+
+### Features
+
+New features require:
+1. Prior discussion and approval via an issue
+2. Alignment with Helium's privacy-first philosophy
+3. Minimal bloat and performance impact
+4. Cross-platform compatibility (when applicable)
+
+## Project Structure
+
+Helium is organized across multiple repositories:
+
+<CardGroup cols={2}>
+  <Card title="Main Repository" icon="code">
+    Core patches and configuration files
+  </Card>
+  <Card title="Platform Packaging" icon="box">
+    - [helium-macos](https://github.com/imputnet/helium-macos)
+    - [helium-linux](https://github.com/imputnet/helium-linux)
+    - [helium-windows](https://github.com/imputnet/helium-windows)
+  </Card>
+  <Card title="Services" icon="server">
+    [helium-services](https://github.com/imputnet/helium-services)
+  </Card>
+  <Card title="Onboarding" icon="rocket">
+    [helium-onboarding](https://github.com/imputnet/helium-onboarding) - The setup page at `helium://setup`
+  </Card>
+</CardGroup>
+
+## Code of Conduct
+
+- Be respectful and professional
+- Focus on constructive feedback
+- Respect maintainer decisions
+- Do not submit spam or low-quality contributions
+- Be honest about your contributions and testing
+
+## Getting Help
+
+<Note>
+  If you need help with your contribution, feel free to ask questions in your issue or pull request. The maintainers and community are here to help.
+</Note>
+
+## License
+
+All code, patches, and unique content contributed to Helium is licensed under **GPL-3.0**. Any imported content from other projects retains its original license.
+
+By contributing, you agree to license your contributions under GPL-3.0.

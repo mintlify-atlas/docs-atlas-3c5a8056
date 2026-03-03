@@ -1,0 +1,441 @@
+---
+title: Updates and Update Channels
+description: How Helium's update system works, including automatic updates, update channels, and component updates
+---
+
+Helium includes an update system designed to keep your browser secure and up-to-date while respecting your privacy. This guide explains how updates work, how to configure them, and the differences between update channels.
+
+## Update System Overview
+
+Helium's update mechanism includes:
+
+- **Browser updates**: Core Helium binary and framework updates
+- **Component updates**: CRLSet (certificate revocation), Widevine CDM (DRM)
+- **Extension updates**: Updates for installed extensions (if enabled)
+
+<Note>
+**Privacy-First Updates**: Unlike Chrome, Helium's update checks are optional and can be fully disabled. All update communication goes through Helium services, which you control.
+</Note>
+
+## Platform Support
+
+<CardGroup cols={2}>
+  <Card title="macOS" icon="apple">
+    **Full automatic update support**
+    
+    - Browser updates via Sparkle framework
+    - Component updates via Helium services
+    - Background update checks
+    - In-browser update notifications
+  </Card>
+  
+  <Card title="Windows / Linux" icon="linux">
+    **Component updates only**
+    
+    - Component updates (CRLSet, Widevine)
+    - No automatic browser updates yet
+    - Use external package managers
+    - Planned for future releases
+  </Card>
+</CardGroup>
+
+<Warning>
+**Windows and Linux**: Automatic core browser updates are not yet available. Use your system's package manager (apt, dnf, Chocolatey, etc.) or check the Helium website manually for updates.
+</Warning>
+
+## Update Channels
+
+Helium offers two update channels with different stability and update frequency:
+
+<Tabs>
+  <Tab title="Stable (Default)">
+    **Recommended for most users**
+    
+    - Thoroughly tested releases
+    - Security updates and bug fixes
+    - New features after testing period
+    - Updated every 2-4 weeks typically
+    - Most stable and reliable
+    
+    **Best for**: Daily driving, production work, users who prioritize stability
+  </Tab>
+  
+  <Tab title="Beta">
+    **For testing and early access**
+    
+    - Earlier access to new features
+    - Less testing than Stable
+    - May contain bugs
+    - Updated more frequently (1-2 weeks)
+    - Helps developers identify issues
+    
+    **Best for**: Developers, testers, users who want to try new features early and can tolerate occasional issues
+  </Tab>
+</Tabs>
+
+### Switching Update Channels
+
+You can change your update channel in two ways:
+
+<Tabs>
+  <Tab title="Via Flags (Recommended)">
+    <Steps>
+      <Step title="Open Flags Page">
+        Navigate to `chrome://flags/#helium-update-channel`
+      </Step>
+      
+      <Step title="Select Channel">
+        Choose your desired channel:
+        - **Automatic** (default): Stable
+        - **Stable**: Stable releases
+        - **Beta**: Beta releases
+      </Step>
+      
+      <Step title="Restart Browser">
+        Click "Relaunch" to apply the change
+      </Step>
+      
+      <Step title="Check for Updates">
+        Go to Settings → About to check for updates on the new channel
+      </Step>
+    </Steps>
+    
+    See [Chrome Flags](/usage/flags) for more details on the update channel flag.
+  </Tab>
+  
+  <Tab title="Via Command Line">
+    Launch Helium with the `--helium-update-channel` flag:
+    
+    ```bash
+    # macOS
+    /Applications/Helium.app/Contents/MacOS/Helium --helium-update-channel=beta
+    
+    # Linux
+    helium --helium-update-channel=beta
+    
+    # Windows
+    "C:\Program Files\Helium\helium.exe" --helium-update-channel=beta
+    ```
+    
+    **Valid values**: `stable`, `beta`
+    
+    <Note>
+    Command line flags are temporary unless you modify your launch shortcut. Using the flags page (Method 1) is persistent.
+    </Note>
+  </Tab>
+</Tabs>
+
+## Configuring Updates
+
+### Helium Services Update Settings
+
+Update configuration is managed through Helium Services:
+
+<Steps>
+  <Step title="Open Privacy Settings">
+    Navigate to **Settings → Privacy and security → Helium services**
+  </Step>
+  
+  <Step title="Enable Helium Services">
+    Ensure "Enable Helium services" is toggled on
+  </Step>
+  
+  <Step title="Configure Update Options">
+    Toggle "Allow automatic browser and component updates":
+    
+    - **Enabled (Recommended)**: Browser and components update automatically
+    - **Disabled**: No automatic updates (you must update manually)
+  </Step>
+</Steps>
+
+<Accordion title="Update Setting Details">
+  **When enabled**, Helium will:
+  - Check for browser updates periodically (macOS only)
+  - Download and install updates in the background
+  - Notify you when updates are ready to install
+  - Update security components (CRLSet, Widevine)
+  
+  **When disabled**, Helium will:
+  - Skip all update checks
+  - Not contact update servers
+  - Not update any components automatically
+  - Show "Component updates are disabled" on `chrome://components`
+  
+  **Recommendation**: Keep this enabled for security. CRLSet updates protect you from compromised certificates.
+</Accordion>
+
+### About Page
+
+Check update status and manually trigger updates:
+
+1. Navigate to **Settings → About** or `chrome://settings/help`
+2. The page displays:
+   - Current Helium version
+   - Update check status
+   - Update channel (if set)
+3. Click "Check for updates" to manually check (macOS only)
+
+<Note>
+The About page is simplified in Helium with Google support links removed. Update status reflects your Helium Services configuration.
+</Note>
+
+## Component Updates
+
+Component updates keep security-critical features current:
+
+### Included Components
+
+Helium updates two essential components:
+
+<AccordionGroup>
+  <Accordion title="CRLSet (Certificate Revocation List)">
+    **Purpose**: Identifies revoked SSL/TLS certificates
+    
+    **Why it matters**: Protects you from visiting sites with compromised security certificates
+    
+    **Update frequency**: Several times per week or as needed
+    
+    **Recommendation**: Always keep enabled
+    
+    **ID**: `hfnkpimlhhgieaddgfemjhofmfblmnib`
+  </Accordion>
+  
+  <Accordion title="Widevine CDM (Content Decryption Module)">
+    **Purpose**: Enables DRM-protected content playback (Netflix, Spotify, etc.)
+    
+    **Why it matters**: Required for streaming services with DRM
+    
+    **Update frequency**: Monthly or as needed
+    
+    **Recommendation**: Keep enabled if you use streaming services
+    
+    **ID**: `oimompecagnajdejgnnjijobebaeigek`
+  </Accordion>
+</AccordionGroup>
+
+<Info>
+**Privacy Note**: Helium only updates these two components. Other Chromium components that report usage statistics or enable tracking have been removed.
+</Info>
+
+### Checking Component Status
+
+View component update status:
+
+1. Navigate to `chrome://components`
+2. Find CRLSet and Widevine in the list
+3. Check their version and status
+4. Click "Check for update" to manually update a component
+
+<Warning>
+If Helium Services updates are disabled, components will show: **"Component updates are disabled. See Helium services in settings."**
+</Warning>
+
+## Update Process
+
+### Automatic Updates (macOS)
+
+<Steps>
+  <Step title="Background Check">
+    Helium periodically checks for updates in the background according to your update channel
+  </Step>
+  
+  <Step title="Download">
+    If an update is available, Helium downloads it in the background
+  </Step>
+  
+  <Step title="Notification">
+    You'll see a notification in the app menu or toolbar when an update is ready
+  </Step>
+  
+  <Step title="Installation">
+    Restart Helium to install the update. Your tabs and settings are preserved.
+  </Step>
+</Steps>
+
+### Manual Updates (Windows/Linux)
+
+<Tabs>
+  <Tab title="Debian/Ubuntu">
+    ```bash
+    # Update package list
+    sudo apt update
+    
+    # Upgrade Helium
+    sudo apt upgrade helium
+    ```
+  </Tab>
+  
+  <Tab title="Fedora">
+    ```bash
+    # Check for updates
+    sudo dnf check-update
+    
+    # Update Helium
+    sudo dnf update helium
+    ```
+  </Tab>
+  
+  <Tab title="Arch Linux">
+    ```bash
+    # Update system including Helium
+    sudo pacman -Syu
+    ```
+  </Tab>
+  
+  <Tab title="Windows">
+    **Option 1: Package Manager**
+    ```powershell
+    # If installed via Chocolatey
+    choco upgrade helium
+    
+    # If installed via winget
+    winget upgrade helium
+    ```
+    
+    **Option 2: Manual Download**
+    1. Visit the Helium releases page
+    2. Download the latest installer
+    3. Run the installer (it will update your existing installation)
+  </Tab>
+</Tabs>
+
+## Update Security
+
+Helium's update system is designed with security in mind:
+
+<CardGroup cols={2}>
+  <Card title="Signed Updates" icon="signature">
+    All updates are cryptographically signed and verified before installation
+  </Card>
+  
+  <Card title="HTTPS Only" icon="lock">
+    Update checks and downloads occur only over HTTPS
+  </Card>
+  
+  <Card title="No Telemetry" icon="shield">
+    Update checks don't send usage data or tracking information
+  </Card>
+  
+  <Card title="User Control" icon="user">
+    You can disable updates entirely if you prefer manual control
+  </Card>
+</CardGroup>
+
+## Troubleshooting Updates
+
+<AccordionGroup>
+  <Accordion title="Updates Not Appearing">
+    **Check the following**:
+    
+    1. **Helium Services enabled**: Go to Settings → Privacy → Helium services and ensure services and updates are enabled
+    2. **Internet connection**: Verify you have internet access
+    3. **Update channel**: Confirm you're on the expected channel in `chrome://flags`
+    4. **Platform limitations**: Windows/Linux don't support automatic browser updates yet
+    
+    **macOS specific**: Check Console.app for Sparkle-related errors
+  </Accordion>
+  
+  <Accordion title="Component Update Errors">
+    If components show update errors:
+    
+    1. Go to `chrome://components`
+    2. Click "Check for update" next to the failed component
+    3. If it fails again, check:
+       - Helium Services are enabled
+       - Your internet connection is stable
+       - No firewall blocking update requests
+    4. Restart the browser and try again
+  </Accordion>
+  
+  <Accordion title="Update Download Stuck">
+    If an update download appears stuck:
+    
+    1. Check your internet connection
+    2. Restart Helium
+    3. Navigate to Settings → About to re-trigger the update check
+    4. If using macOS, check Activity Monitor for helium_update process
+    5. As a last resort, download and install manually from the website
+  </Accordion>
+  
+  <Accordion title="Want to Disable All Updates">
+    To completely disable updates:
+    
+    1. Go to **Settings → Privacy and security → Helium services**
+    2. Disable "Enable Helium services" or just disable the updates toggle
+    3. This will prevent both browser and component updates
+    
+    <Warning>
+    Disabling updates means you won't receive security patches. Only do this if you have a specific reason and plan to update manually.
+    </Warning>
+  </Accordion>
+</AccordionGroup>
+
+## Version Information
+
+Understanding Helium version numbers:
+
+```
+Helium X.Y.Z (Chromium A.B.C.D)
+```
+
+- **X**: Major Helium version (breaking changes, major features)
+- **Y**: Minor Helium version (new features, significant updates)
+- **Z**: Patch version (bug fixes, minor improvements)
+- **A.B.C.D**: Underlying Chromium version
+
+<Info>
+Helium versions are independent of Chromium versions. Helium may update its version number for significant changes even when using the same Chromium base.
+</Info>
+
+## Best Practices
+
+<Steps>
+  <Step title="Keep Updates Enabled">
+    Enable automatic updates for security patches and bug fixes, especially CRLSet updates which protect against compromised certificates
+  </Step>
+  
+  <Step title="Choose the Right Channel">
+    - **Stable** for daily use and maximum stability
+    - **Beta** for testing and early feature access
+  </Step>
+  
+  <Step title="Check Periodically">
+    Even with automatic updates enabled, occasionally check Settings → About to ensure you're on the latest version
+  </Step>
+  
+  <Step title="Backup Important Data">
+    Before major updates, consider exporting bookmarks and important data (though updates preserve this automatically)
+  </Step>
+  
+  <Step title="Test Beta Carefully">
+    If using Beta channel, be prepared for occasional issues and have a Stable installation as backup for critical work
+  </Step>
+</Steps>
+
+## Release Notes and Changelogs
+
+Stay informed about updates:
+
+- **GitHub Releases**: Check the Helium GitHub repository for detailed release notes
+- **Website**: Visit the official Helium website for announcements
+- **In-browser**: Settings → About shows when new updates are available
+
+<Tip>
+Watch or star the Helium GitHub repository to get notifications about new releases.
+</Tip>
+
+## Related Pages
+
+<CardGroup cols={3}>
+  <Card title="Settings Guide" icon="gear" href="/usage/settings">
+    Configure Helium Services and update preferences
+  </Card>
+  
+  <Card title="Chrome Flags" icon="flag" href="/usage/flags">
+    Set update channel via the flags interface
+  </Card>
+  
+  <Card title="Downloads" icon="download" href="/downloads">
+    Initial installation instructions for all platforms
+  </Card>
+</CardGroup>

@@ -1,0 +1,434 @@
+---
+title: uBlock Origin Integration
+description: Learn about Helium's built-in uBlock Origin content blocker installed as a native component extension
+---
+
+uBlock Origin is built directly into Helium as a component extension, providing powerful ad blocking and privacy protection from the moment you install the browser.
+
+## What is uBlock Origin?
+
+uBlock Origin is a free, open-source content blocker that excels at:
+
+<CardGroup cols={2}>
+  <Card title="Ad Blocking" icon="ban">
+    Removes advertisements across the web efficiently
+  </Card>
+  
+  <Card title="Tracker Blocking" icon="eye-slash">
+    Prevents analytics and tracking scripts from running
+  </Card>
+  
+  <Card title="Privacy Protection" icon="shield">
+    Blocks known privacy-invasive domains
+  </Card>
+  
+  <Card title="Performance" icon="gauge-high">
+    Uses minimal CPU and memory compared to alternatives
+  </Card>
+</CardGroup>
+
+## Built-In vs Extension Store
+
+Helium installs uBlock Origin as a **component extension**, not a regular extension:
+
+| Aspect | Component Extension | Regular Extension |
+|--------|---------------------|-------------------|
+| Installation | Bundled with browser | Manual install from store |
+| Updates | Via browser updates | Automatic from store |
+| Removal | Cannot be removed | Can be uninstalled |
+| Permissions | Pre-granted | Requires user approval |
+| Availability | Always present | Must be added |
+
+<Note>
+Component extensions are part of the browser itself, ensuring uBlock Origin is always available and properly integrated.
+</Note>
+
+## Version
+
+Helium includes uBlock Origin **version 1.69.0-2**, as specified in `deps.ini`:
+
+```ini
+[ublock_origin]
+version = 1.69.0-2
+url = https://github.com/imputnet/uBlock/releases/download/%(version)s/uBlock0_%(version)s.chromium.zip
+sha256 = fdc0607538082b409833acd2a80f3a2d657b2af70813a9a8e8e5c7a9938f7e29
+download_filename = ublock-origin-%(version)s.zip
+output_path = third_party/ublock
+strip_leading_dirs = uBlock0.chromium
+```
+
+<Warning>
+The version is pinned to ensure stability. Updates come with new Helium releases after testing.
+</Warning>
+
+## Integration Details
+
+### Component Extension ID
+
+From `components/helium_services/extension_ids.h`:
+
+```cpp
+namespace helium {
+
+inline constexpr char kUBlockOriginWebstoreId[] =
+    "cjpalhdlnbpafiamejdnhcphjbkeiagm";
+
+inline constexpr char kUBlockOriginComponentId[] =
+    "blockjmkbacgjkknlgpkjjiijinjdanf";
+
+inline constexpr char kUblockOriginComponentIdHashed[] =
+    // SHA1(kUBlockOriginComponentId)
+    "70C2895ED505C532A80761F0928B821B103D0786";
+
+}  // namespace helium
+```
+
+**Why different IDs?**
+- **Webstore ID:** Original uBlock Origin extension ID
+- **Component ID:** Custom ID for Helium's component version
+- This prevents conflicts and allows independent management
+
+### Component Loader
+
+Helium adds uBlock Origin during browser initialization:
+
+```cpp
+// From patches/helium/core/ublock-install-as-component.patch
+void ComponentLoader::AddUBlock() {
+  Add(IDR_UBLOCK_MANIFEST_JSON, base::FilePath(FILE_PATH_LITERAL("ublock")));
+  
+  using namespace extension_l10n_util;
+  ComponentExtensionInfo& info = component_extensions_.back();
+  std::string error;
+  bool localized = LocalizeExtension(info.root_directory, &info.manifest,
+                      GzippedMessagesPermission::kAllowForTrustedSource,
+                      &error, true);
+  
+  if (!localized) {
+    LOG(ERROR) << "Failed to localize uBlock: " << error;
+  }
+}
+```
+
+This:
+1. Loads the manifest from resources (`IDR_UBLOCK_MANIFEST_JSON`)
+2. Localizes the extension for the user's language
+3. Registers it as a component extension
+
+### Allowlist Entry
+
+Component extensions must be explicitly allowed:
+
+```cpp
+// From chrome/browser/extensions/component_extensions_allowlist/allowlist.cc
+constexpr auto kAllowed = base::MakeFixedFlatSet<std::string_view>({
+    extension_misc::kInAppPaymentsSupportAppId,
+    extension_misc::kPdfExtensionId,
++   helium::kUBlockOriginComponentId,
+    // ...
+});
+```
+
+Without this entry, uBlock Origin would be blocked as an unauthorized component.
+
+### Resource Integration
+
+From `third_party/ublock/resources/grit/ublock_resources.h`:
+
+```cpp
+#include "third_party/ublock/resources/grit/ublock_resources.h"
+
+// Manifest resource ID
+Add(IDR_UBLOCK_MANIFEST_JSON, base::FilePath(FILE_PATH_LITERAL("ublock")));
+```
+
+The entire uBlock Origin extension is compiled into Helium's resources, making it available without network requests.
+
+## Loading Process
+
+<Steps>
+  <Step title="Browser Startup">
+    During initialization, `ComponentLoader::AddDefaultComponents()` is called
+  </Step>
+  
+  <Step title="AddUBlock Called">
+    ```cpp
+    if (!skip_session_components) {
+      AddWebStoreApp();
++     AddUBlock();
+    }
+    ```
+  </Step>
+  
+  <Step title="Manifest Loaded">
+    uBlock's manifest is loaded from compiled resources
+  </Step>
+  
+  <Step title="Localization">
+    Extension UI is localized to the user's language
+  </Step>
+  
+  <Step title="Extension Activated">
+    uBlock Origin starts blocking content immediately
+  </Step>
+</Steps>
+
+## Settings Integration
+
+Helium adds a direct link to uBlock Origin settings:
+
+```cpp
+// From patches/helium/ui/ublock-show-in-settings.patch
+// Adds "Content Blocking" section to Settings
+```
+
+You can access uBlock Origin settings via:
+- `chrome://settings` → Privacy → Content Blocking
+- Click the uBlock Origin toolbar icon
+- `chrome://extensions` → uBlock Origin → Details
+
+## Configuration
+
+### Default Settings
+
+Helium preconfigures uBlock Origin with sensible defaults:
+
+```cpp
+// From patches/helium/core/ublock-reconfigure-defaults.patch
+// Optimized for privacy and performance
+```
+
+**Default filter lists enabled:**
+- uBlock filters
+- EasyList
+- EasyPrivacy
+- Peter Lowe's Ad/tracking server list
+- Online Malicious URL Blocklist
+
+### Custom Filter Lists
+
+You can add custom filter lists:
+
+1. Click the uBlock Origin icon
+2. Open the Dashboard
+3. Go to "Filter lists"
+4. Enable additional lists or add custom URLs
+
+<Tip>
+Popular additional lists include:
+- **AdGuard Base** - More aggressive ad blocking
+- **Fanboy's Annoyances** - Removes cookie notices and social widgets
+- **uBlock Annoyances** - Removes newsletter popups and other annoyances
+</Tip>
+
+### Custom Rules
+
+Advanced users can write custom rules:
+
+```
+! Block specific domain
+||ads.example.com^
+
+! Allow specific domain
+@@||good-ads.example.com^
+
+! Cosmetic filter (hide element)
+example.com##.advertisement
+
+! Procedural cosmetic filter
+example.com##:xpath(//div[@class="ads"])
+```
+
+Add these in Dashboard → My filters.
+
+## Performance Impact
+
+uBlock Origin is designed for efficiency:
+
+<CardGroup cols={3}>
+  <Card title="<50MB RAM" icon="memory">
+    Minimal memory footprint even with many filter lists
+  </Card>
+  
+  <Card title="<5% CPU" icon="microchip">
+    Negligible CPU usage during browsing
+  </Card>
+  
+  <Card title="Faster Loading" icon="bolt">
+    Pages load faster by blocking unnecessary content
+  </Card>
+</CardGroup>
+
+**Performance tips:**
+- Enable only filter lists you need
+- Use "Parse and enforce cosmetic filters" judiciously
+- Disable "Ignore generic cosmetic filters" for better performance
+
+## Advanced Features
+
+### Dynamic Filtering
+
+Create site-specific rules on the fly:
+
+1. Click uBlock Origin icon
+2. Click the "`</>`" button (logger)
+3. Browse the site
+4. Create rules based on network requests
+
+### Element Picker
+
+Manually hide elements:
+
+1. Click uBlock Origin icon
+2. Click the eyedropper icon
+3. Select element to block
+4. Click "Create"
+
+### Trusted Sites
+
+Disable uBlock Origin on specific sites:
+
+1. Click uBlock Origin icon
+2. Click the power button
+3. Reload the page
+
+<Note>
+Trusted sites are saved per-domain. You can manage them in Dashboard → Trusted sites.
+</Note>
+
+## Privacy Benefits
+
+Built-in uBlock Origin enhances privacy:
+
+1. **No Extension Store Connection** - No need to connect to Chrome Web Store
+2. **No Update Tracking** - Updates come with browser updates, not tracked individually
+3. **Tracker Blocking** - Prevents third-party tracking across websites
+4. **Malware Protection** - Blocks known malicious domains
+5. **Fingerprinting Reduction** - Blocks some fingerprinting scripts
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Site broken after enabling uBlock Origin">
+    Some sites break when ads are blocked:
+    
+    **Solutions:**
+    1. Disable uBlock temporarily (click power button)
+    2. Add site to Trusted sites
+    3. Report issue to uBlock Origin filter list maintainers
+    4. Create a custom rule to allow specific resources
+  </Accordion>
+  
+  <Accordion title="uBlock Origin not blocking ads">
+    **Check:**
+    1. uBlock Origin is enabled (icon should be colorful, not gray)
+    2. Filter lists are up to date (Dashboard → Filter lists → Update now)
+    3. You're not on a Trusted site
+    4. The "ad" might be native content, not a real ad
+  </Accordion>
+  
+  <Accordion title="Can't remove uBlock Origin">
+    uBlock Origin is a component extension and cannot be removed.
+    
+    **Alternative:** Disable it:
+    1. Go to `chrome://extensions`
+    2. Find uBlock Origin
+    3. Toggle it off
+    
+    This fully disables blocking while keeping the extension installed.
+  </Accordion>
+  
+  <Accordion title="Video streaming sites not working">
+    Some streaming sites detect ad blockers:
+    
+    **Solutions:**
+    1. Add site to Trusted sites
+    2. Use the "Disable cosmetic filtering" option
+    3. Try disabling specific filter lists (some are overly aggressive)
+  </Accordion>
+</AccordionGroup>
+
+## Updating uBlock Origin
+
+uBlock Origin updates with Helium releases:
+
+1. New uBlock version is released
+2. Helium developers test it
+3. `deps.ini` is updated
+4. Next Helium release includes new version
+
+<Warning>
+You cannot manually update uBlock Origin. It must be updated by upgrading Helium itself.
+</Warning>
+
+**Why this approach?**
+- Ensures stability
+- Prevents breaking changes
+- Maintains compatibility with Helium patches
+- Provides testing before release
+
+## Comparison: uBlock vs Alternatives
+
+| Feature | uBlock Origin | AdBlock Plus | Brave Shields |
+|---------|---------------|--------------|---------------|
+| Open Source | Yes | Yes | Yes |
+| Memory Usage | ~50MB | ~150MB | N/A (built-in) |
+| Custom Rules | Full support | Limited | Very limited |
+| Filter Lists | Extensive | Moderate | Fixed |
+| CPU Impact | Minimal | Moderate | Minimal |
+| Privacy | Excellent | Good | Excellent |
+| Customization | High | Medium | Low |
+
+## Configuration Files
+
+Helium applies these patches for uBlock integration:
+
+1. **`ublock-install-as-component.patch`** - Registers as component extension
+2. **`ublock-reconfigure-defaults.patch`** - Sets optimal defaults
+3. **`ublock-setup-sources.patch`** - Configures resource paths
+4. **`ublock-helium-services.patch`** - Integrates with Helium services
+5. **`ublock-show-in-settings.patch`** - Adds Settings page link
+
+## Source Code
+
+Key implementation files:
+
+- `components/helium_services/extension_ids.h` - Extension IDs
+- `chrome/browser/extensions/component_loader.cc` - Component loading
+- `chrome/browser/extensions/component_extensions_allowlist/allowlist.cc` - Allowlist
+- `third_party/ublock/` - uBlock Origin source and resources
+
+## Best Practices
+
+<Steps>
+  <Step title="Start with Defaults">
+    Default filter lists work well for most users. Don't add too many lists initially.
+  </Step>
+  
+  <Step title="Use Trusted Sites Sparingly">
+    Only trust sites you actually want to support. Most "ad blocker detection" is fake.
+  </Step>
+  
+  <Step title="Update Filter Lists Regularly">
+    Check for updates weekly: Dashboard → Filter lists → Update now
+  </Step>
+  
+  <Step title="Learn Dynamic Filtering">
+    Master the logger and dynamic filtering for surgical control over blocking.
+  </Step>
+  
+  <Step title="Share Filter Rules">
+    If you create useful custom rules, share them with the community!
+  </Step>
+</Steps>
+
+## Resources
+
+- [uBlock Origin Wiki](https://github.com/gorhill/uBlock/wiki)
+- [Filter Syntax Documentation](https://github.com/gorhill/uBlock/wiki/Static-filter-syntax)
+- [Dynamic Filtering Guide](https://github.com/gorhill/uBlock/wiki/Dynamic-filtering)
+- [FilterLists.com](https://filterlists.com/) - Browse available filter lists
+
+<Tip>
+The official uBlock Origin repository has extensive documentation on advanced features and troubleshooting.
+</Tip>
